@@ -280,7 +280,7 @@ MVP 代码级完成：
 | B-07 | ADS/CDS/RDS/LDS | P0 | B-04 | gRPC ADS 返回 cluster/route/listener | `[x]` public 资源 |
 | B-08 | LDS/RDS xDS | P0 | B-07 | listener/route 资源 + Envoy 验证 | `[ ]` 仅 public；internal `mcp_router` 仍静态 |
 | B-09 | 管理 API | P0 | B-04 | status/config/revisions/apply/rollback/envoy | `[~]` 无鉴权/dataplanes/tools |
-| B-10 | CRD + controller | P0 | B-01 | `kubectl apply` → snapshot | `[~]` CRD schema + ConfigMap 目录 controller；CRD informer 未做 |
+| B-10 | CRD + controller | P0 | B-01 | `kubectl apply` → snapshot | `[~]` CRD schema + ConfigMap controller + `cmd/crd-controller` list/watch + fake API 测试；无真集群验证 |
 | B-11 | Admission webhook | P0 | B-10 | 非法 CRD 拒绝 | `[~]` handler/单测/manifests；无集群/cert-manager 验证 |
 | B-12 | 2 副本 + leader election + mTLS | P0 | B-07 | kill 1 副本不断流 | `[~]` T8 双 gateway 停 1 个：17,707 req / 3×503，非零丢失；mTLS PASS；leader election 未做 |
 | B-13 | Tool Registry 服务 | P0 | B-01 | `/api/v1/tools`、stale 标记 | `[~]` 代码内有 catalog |
@@ -684,3 +684,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v18 | T8 xDS NACK 注入：NACK 0→3143，旧 listener 保持服务，重新 apply 后 initialize 200 |
 | 2026-11-25 | v19 | T8 xDS 长连接 SSE 跨 100 次 LDS/CDS/RDS churn PASS；ACK 175；C-11 完成（单节点） |
 | 2026-11-25 | v20 | T8 双副本停 1 个：17,707 req / 3×503，drain 后仍非零丢失；B-12 仍 partial |
+| 2026-11-25 | v21 | 新增 `cmd/crd-controller` + `internal/kube` list/watch：McpSource/McpConsumer → apply；fake API 测试；无真集群验证 |

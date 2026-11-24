@@ -35,6 +35,7 @@
 - Added T8 xDS churn (`scripts/t8-xds.ps1`): 100 CDS/RDS applies under live load, 0 errors, 250 ACKs; fixed missing HCM `RouteConfigName`.
 - Added T8 mTLS (`scripts/t8-mtls.ps1`): client cert 200, no cert rejected.
 - Ran 10-minute T8 load: 500,710 requests, 835 RPS, p99 3.74ms, 0 errors (single host, `tools/list`).
+- Added `cmd/crd-controller` + `internal/kube`: McpSource/McpConsumer list/watch, config compile, hash dedupe, fake API tests. Real-cluster validation still missing.
 
 ## Test log
 

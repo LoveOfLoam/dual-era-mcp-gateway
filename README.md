@@ -196,6 +196,7 @@ test/boundary/      # T4 dual-era boundary tests
 docs/spec/          # requirements, protocol matrix, tool sources, providers
 docs/superpowers/   # design doc
 scripts/            # test/bench/helm/envoy/t8 PowerShell scripts
+cmd/crd-controller/ # McpSource/McpConsumer list/watch controller (no client-go)
 deploy/envoy/       # bootstrap for validation
 deploy/t8/          # Docker/Envoy T8 harness
 deploy/helm/dual-era # Helm skeleton
@@ -253,7 +254,7 @@ Not implemented / not verified:
 - full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;
 - zero-downtime LDS/CDS and HA/leader election (T8 TLS + mTLS pass);
-- live Kubernetes informer / controller / CRDs;
+- real-cluster validation of the CRD list/watch controller (fake API tests only);
 - Redis production HA/rotation validation (T8 uses a single Redis container); JWT;
 - complex REST adapter multipart/long-running (OAuth2/HMAC are implemented);
 - real 500 RPS / k6 / chaos reports;

@@ -31,6 +31,8 @@ function Build-T8Binaries {
         if ($LASTEXITCODE -ne 0) { throw "build sse-shim failed" }
         go build -trimpath -o (Join-Path $bin "controlplane") ./cmd/controlplane
         if ($LASTEXITCODE -ne 0) { throw "build controlplane failed" }
+        go build -trimpath -o (Join-Path $bin "crd-controller") ./cmd/crd-controller
+        if ($LASTEXITCODE -ne 0) { throw "build crd-controller failed" }
     } finally {
         Pop-Location
         if ($oldGOOS) { $env:GOOS = $oldGOOS } else { Remove-Item Env:GOOS -ErrorAction SilentlyContinue }

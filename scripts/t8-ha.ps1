@@ -15,7 +15,7 @@ Push-Location $root
 try {
     $oldGOOS = $env:GOOS; $oldGOARCH = $env:GOARCH; $oldCGO = $env:CGO_ENABLED
     $env:GOOS = "linux"; $env:GOARCH = "amd64"; $env:CGO_ENABLED = "0"
-    foreach ($cmd in @("gateway", "legacy-mock", "policy", "rest-mock", "sse-shim", "controlplane")) {
+    foreach ($cmd in @("gateway", "legacy-mock", "policy", "rest-mock", "sse-shim", "controlplane", "crd-controller")) {
         go build -trimpath -o (Join-Path $bin $cmd) "./cmd/$cmd"
         if ($LASTEXITCODE -ne 0) { throw "build $cmd failed" }
     }

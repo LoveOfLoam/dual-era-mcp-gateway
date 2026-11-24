@@ -18,6 +18,7 @@ try {
     go build -trimpath -o (Join-Path $bin "rest-mock") ./cmd/rest-mock
     go build -trimpath -o (Join-Path $bin "sse-shim") ./cmd/sse-shim
     go build -trimpath -o (Join-Path $bin "controlplane") ./cmd/controlplane
+    go build -trimpath -o (Join-Path $bin "crd-controller") ./cmd/crd-controller
     $env:GOOS = $oldGOOS; $env:GOARCH = $oldGOARCH; $env:CGO_ENABLED = $oldCGO
     if (-not $oldGOOS) { Remove-Item Env:GOOS -ErrorAction SilentlyContinue }
     if (-not $oldGOARCH) { Remove-Item Env:GOARCH -ErrorAction SilentlyContinue }

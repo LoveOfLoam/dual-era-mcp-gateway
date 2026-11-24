@@ -9,6 +9,7 @@ COPY deploy/t8/bin/policy /policy
 COPY deploy/t8/bin/rest-mock /rest-mock
 COPY deploy/t8/bin/sse-shim /sse-shim
 COPY deploy/t8/bin/controlplane /controlplane
+COPY deploy/t8/bin/crd-controller /crd-controller
 COPY config/policy.example.json /config/policy.example.json
 USER nonroot:nonroot
 ENTRYPOINT ["/gateway"]

@@ -4,14 +4,13 @@
 POSTs the compiled `controlplane.Config` to `/api/v1/apply` only when the
 content hash changes.
 
-This is **not** a CRD controller:
+This ConfigMap controller is **not** the CRD controller. A separate
+`cmd/crd-controller` + `internal/kube` list/watch implementation exists for
+`McpSource`/`McpConsumer`; see `docs/k8s-controller.md` and
+`deploy/controller/crd-deployment.yaml`.
 
-- it polls a mounted ConfigMap volume, not the Kubernetes API;
-- it has no informer, work queue, finalizer, status/conditions, or leader election;
-- it does not read `deploy/crds` objects.
-
-It is a small, testable reconciliation path for the ConfigMap deployment mode.
-The CRD controller remains future work (B-10 boundary in `task_plan.md`).
+Both paths lack leader election, finalizers, and a real-cluster validation in
+this environment.
 
 Local run:
 

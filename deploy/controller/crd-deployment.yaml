@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-crd-controller
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-crd-controller
+rules:
+  - apiGroups: ["gateway.dual-era.io"]
+    resources: ["mcpsources", "mcpconsumers"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-crd-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-crd-controller
+subjects:
+  - kind: ServiceAccount
+    name: mcp-crd-controller
+    namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-crd-controller
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: mcp-crd-controller}
+  template:
+    metadata:
+      labels: {app: mcp-crd-controller}
+    spec:
+      serviceAccountName: mcp-crd-controller
+      containers:
+        - name: controller
+          image: dual-era-mcp-gateway:dev
+          command: ["/crd-controller"]
+          args:
+            - "-api=https://kubernetes.default.svc"
+            - "-namespace=default"
+            - "-token-file=/var/run/secrets/kubernetes.io/serviceaccount/token"
+            - "-controlplane=http://controlplane:18080"
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 128Mi}
