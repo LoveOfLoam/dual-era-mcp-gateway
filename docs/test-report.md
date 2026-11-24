@@ -60,7 +60,7 @@ powershell -File scripts/test.ps1
 | `internal/registry` | 88.0% |
 | `internal/restadapter` | 87.7% |
 | `internal/edge` | 83.3% |
-| `internal/policy` | 82.8% |
+| `internal/policy` | 69.2% (JWT/JWKS added) |
 | `internal/legacy` | 82.5% |
 | `internal/xds` | 81.9% |
 | `internal/facade` | 80.8% |
