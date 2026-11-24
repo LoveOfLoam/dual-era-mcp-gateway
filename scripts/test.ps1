@@ -33,6 +33,10 @@ Write-Host "==> go vet ./..."
 go vet ./...
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+Write-Host "==> helm lint (optional)"
+& "$PSScriptRoot\helm-lint.ps1"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 Write-Host "==> envoy validate (optional)"
 & "$PSScriptRoot\envoy-validate.ps1"
 exit $LASTEXITCODE

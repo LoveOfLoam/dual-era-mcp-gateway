@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dual-era-controlplane
+spec:
+  selector: {app: dual-era-controlplane}
+  ports:
+    - {name: http, port: 18080, targetPort: http}
+    - {name: xds, port: 18000, targetPort: xds}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dual-era-gateway
+spec:
+  selector: {app: dual-era-gateway}
+  ports:
+    - {name: http, port: 8080, targetPort: http}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dual-era-policy
+spec:
+  selector: {app: dual-era-policy}
+  ports:
+    - {name: authz, port: 19001, targetPort: authz}
+    - {name: ratelimit, port: 19002, targetPort: ratelimit}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dual-era-envoy
+spec:
+  type: LoadBalancer
+  selector: {app: dual-era-envoy}
+  ports:
+    - {name: http, port: 8080, targetPort: http}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dual-era-envoy-legacy
+spec:
+  selector: {app: dual-era-envoy-legacy}
+  ports:
+    - {name: mcp, port: 10001, targetPort: mcp}

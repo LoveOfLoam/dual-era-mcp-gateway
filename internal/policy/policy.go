@@ -104,6 +104,12 @@ func (e *Engine) Authenticate(r *http.Request) (string, error) {
 	if key == "" {
 		key = r.Header.Get("X-API-Key")
 	}
+	return e.AuthenticateKey(key)
+}
+
+// AuthenticateKey derives the tenant from a raw API key. ext_authz uses this
+// without constructing a synthetic HTTP request.
+func (e *Engine) AuthenticateKey(key string) (string, error) {
 	if key == "" {
 		return "", ErrUnauthenticated
 	}

@@ -20,6 +20,11 @@
 - Added `docs/spec/traceability.md`: PRD FR-CP/DP/POL/TR/STD/REST/OBS/SEC/OPS/TS + NFR + AC-01..30 mapping.
 - Diagnosed GitHub Actions `test` failure: CI runs `-race` (local Windows has no CGO/gcc). Fixed test-only shared writes in facade/legacy/source/REST-adapter tests and the facade's in-place tools slice mutation.
 - CI workflow now uses `go-version-file: go.mod`, runs non-race then race, and supports manual dispatch.
+- Added `internal/extauthz` and `internal/ratelimit` gRPC services + tests; `cmd/policy`; `cmd/gateway -policy`.
+- Added `internal/obs` metrics/trace/JSON logger + tests; `/metrics` and `X-Trace-Id` in local gateway.
+- Extended xDS to public CDS/RDS/LDS and ACK/NACK callbacks + tests.
+- Added T8 Docker/Envoy harness (`deploy/t8`, `scripts/t8.ps1`) and Helm skeleton.
+- Added REST adapter SSRF host checks/allowlist; facade microbenchmarks and `docs/benchmarks/2026-11-25.md`.
 
 ## Test log
 
@@ -34,8 +39,9 @@
 
 ## Known gaps
 
-- Envoy runtime T8 not executed: no Envoy binary / Docker daemon.
-- xDS is ADS/CDS only; LDS/RDS resources are still generated statically.
+- Envoy runtime T8 not executed: Docker daemon unavailable. Harness is in `deploy/t8`.
+- xDS serves public CDS/RDS/LDS; internal `mcp_router` listener is still static.
+- TLS/mTLS, SSE, drain, Redis, CRD/controller, k6/chaos, demo/ADR are still open.
 - K8s/Nacos providers are manifest/Config-Service based; live informer/service discovery is Phase 2.
 - Complex REST (OAuth/HMAC/multipart/long-running) still Phase 2.
-- Local race detector unavailable; CI should run `CGO_ENABLED=1 go test -race ./...`.
+- Local race detector unavailable; CI `-race` is green.

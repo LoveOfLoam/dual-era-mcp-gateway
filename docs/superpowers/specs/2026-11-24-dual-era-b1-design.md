@@ -124,7 +124,7 @@ MVP:
   - snapshot model;
   - rollback history (in memory + file).
 - `internal/envoy`: generate public/internal listener and cluster config.
-- `internal/xds`: minimal ADS/CDS server using `go-control-plane`; it serves cluster resources derived from `SourceSpec`. Listener/route resources remain static in the MVP.
+- `internal/xds`: ADS server using `go-control-plane`; it serves public CDS/RDS/LDS resources and ACK/NACK callbacks. The internal `mcp_router` listener remains static in the MVP.
 - `internal/restadapter`: REST `SourceSpec` → `legacy.Client` for path/query/JSON-body tools.
 - Providers: static, OpenAPI, K8s ConfigMap/McpSource manifest, Nacos Config Service; live informer/service discovery is Phase 2.
 

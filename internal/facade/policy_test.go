@@ -84,6 +84,32 @@ func TestPolicyRateLimited(t *testing.T) {
 	}
 }
 
+type fakeMetrics struct {
+	auth, rate int
+}
+
+func (f *fakeMetrics) IncAuthDenied()  { f.auth++ }
+func (f *fakeMetrics) IncRateLimited() { f.rate++ }
+
+func TestPolicyMetrics(t *testing.T) {
+	up := &fakeUpstream{result: json.RawMessage(`{"content":[]}`)}
+	f := policyFacade(t, up)
+	m := &fakeMetrics{}
+	f.cfg.Metrics = m
+
+	post(t, f, "tools/list", `{`+meta(mcp.Version20260728)+`}`, nil)
+	if m.auth != 1 {
+		t.Fatalf("auth = %d", m.auth)
+	}
+	headers := map[string]string{"Authorization": "Bearer acme-key", "Mcp-Name": "weather__get_weather"}
+	body := `{"name":"weather__get_weather","arguments":{},` + meta(mcp.Version20260728) + `}`
+	post(t, f, "tools/call", body, headers)
+	post(t, f, "tools/call", body, headers)
+	if m.rate != 1 {
+		t.Fatalf("rate = %d", m.rate)
+	}
+}
+
 func TestToolsListFilteredByPolicy(t *testing.T) {
 	up := &fakeUpstream{tools: []registry.Tool{
 		{Name: "weather__get_weather", OriginalName: "get_weather", Source: "weather"},

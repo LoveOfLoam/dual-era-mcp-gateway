@@ -1,0 +1,59 @@
+# T8: public Envoy -> {internal Envoy mcp_router, Go modern facade}
+# and internal Envoy -> two legacy MCP mocks.
+#
+# Set ENVOY_IMAGE to the digest-locked image from Gate 1 in CI/production:
+#   $env:ENVOY_IMAGE="envoyproxy/envoy@sha256:..."
+services:
+  weather:
+    build:
+      context: ../..
+      dockerfile: deploy/t8/Dockerfile
+    entrypoint: ["/legacy-mock"]
+    command: ["-addr", ":9001", "-name", "weather", "-tools", "get_weather,list_cities"]
+    expose: ["9001"]
+
+  crm:
+    build:
+      context: ../..
+      dockerfile: deploy/t8/Dockerfile
+    entrypoint: ["/legacy-mock"]
+    command: ["-addr", ":9002", "-name", "crm", "-tools", "get_customer"]
+    expose: ["9002"]
+
+  policy:
+    build:
+      context: ../..
+      dockerfile: deploy/t8/Dockerfile
+    entrypoint: ["/policy"]
+    command: ["-config", "/config/policy.example.json", "-authz-addr", ":19001", "-ratelimit-addr", ":19002"]
+    expose: ["19001", "19002"]
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/t8/Dockerfile
+    entrypoint: ["/gateway"]
+    command:
+      - "-addr"
+      - ":8080"
+      - "-legacy"
+      - "weather=http://weather:9001/mcp,crm=http://crm:9002/mcp"
+    expose: ["8080"]
+    depends_on: [weather, crm]
+
+  envoy-legacy:
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:dev}
+    command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+    volumes:
+      - ./envoy-legacy.yaml:/etc/envoy/envoy.yaml:ro
+    expose: ["10001"]
+
+  envoy-public:
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:dev}
+    command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+    volumes:
+      - ./envoy-public.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "8080:8080"
+      - "9901:9901"
+    depends_on: [gateway, envoy-legacy, policy]

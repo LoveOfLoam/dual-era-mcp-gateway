@@ -1,0 +1,6 @@
+apiVersion: v2
+name: dual-era
+description: Dual-era MCP gateway (legacy Envoy router + modern Go facade)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -19,14 +19,18 @@ import (
 	"dual-era-mcp-gateway/internal/legacy"
 	"dual-era-mcp-gateway/internal/legacyendpoint"
 	"dual-era-mcp-gateway/internal/mcp"
+	"dual-era-mcp-gateway/internal/obs"
+	"dual-era-mcp-gateway/internal/policy"
 )
 
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	legacyURLs := flag.String("legacy", envOr("LEGACY_URLS", "weather=http://127.0.0.1:9001/mcp"), "comma-separated name=url legacy MCP upstreams")
+	policyPath := flag.String("policy", "", "optional policy JSON file")
 	flag.Parse()
 
 	backends := parseBackends(*legacyURLs)
+	metrics := obs.NewMetrics()
 	router, err := aggregator.New(backends)
 	if err != nil {
 		log.Fatalf("aggregator: %v", err)
@@ -36,17 +40,28 @@ func main() {
 		ProtocolVersion: mcp.Version20250618,
 		SessionID:       "sess-local",
 	}, router)
-	modernHandler := facade.New(facade.Config{
+	facadeCfg := facade.Config{
 		ServerInfo:        facade.ServerInfo{Name: "dual-era-modern", Version: "0.1.0"},
 		SupportedVersions: []string{mcp.Version20260728},
 		TTLMs:             60000,
 		CacheScope:        "public",
 		MaxBodyBytes:      1 << 20,
-	}, router)
+		Metrics:           metrics,
+	}
+	if *policyPath != "" {
+		engine, err := policy.LoadFile(*policyPath)
+		if err != nil {
+			log.Fatalf("policy: %v", err)
+		}
+		facadeCfg.Policy = engine
+		log.Printf("policy enabled from %s", *policyPath)
+	}
+	modernHandler := facade.New(facadeCfg, router)
 
+	handler := metrics.Wrap(obs.TraceMiddleware(edge.NewWithMetrics(legacyHandler, modernHandler, metrics.Handler())))
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           edge.New(legacyHandler, modernHandler),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      60 * time.Second,

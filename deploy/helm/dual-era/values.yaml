@@ -1,0 +1,43 @@
+image:
+  repository: dual-era-mcp-gateway
+  tag: dev
+  pullPolicy: IfNotPresent
+
+envoyImage:
+  repository: envoyproxy/envoy
+  tag: dev
+  pullPolicy: IfNotPresent
+
+sources:
+  - name: weather
+    type: mcp
+    protocol: legacy
+    endpoint: http://weather:9001/mcp
+    prefix: weather
+  - name: crm
+    type: mcp
+    protocol: legacy
+    endpoint: http://crm:9002/mcp
+    prefix: crm
+
+gateway:
+  legacy: "weather=http://weather:9001/mcp,crm=http://crm:9002/mcp"
+
+policy:
+  consumers:
+    - name: acme
+      tenant: acme
+      apiKeys:
+        - name: demo
+          sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      allow:
+        - source: weather
+          tools: ["*"]
+        - source: crm
+          tools: ["get_customer"]
+  rateLimits:
+    - tenant: acme
+      source: weather
+      tool: get_weather
+      rpm: 60
+      burst: 10

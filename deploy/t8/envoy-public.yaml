@@ -1,0 +1,77 @@
+# T8 public Envoy: path split only. No terminal mcp_router here.
+admin:
+  address:
+    socket_address: {address: 0.0.0.0, port_value: 9901}
+
+static_resources:
+  listeners:
+    - name: public
+      address:
+        socket_address: {address: 0.0.0.0, port_value: 8080}
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: public
+                codec_type: AUTO
+                route_config:
+                  name: public
+                  virtual_hosts:
+                    - name: public
+                      domains: ["*"]
+                      routes:
+                        - match: {prefix: "/modern/mcp"}
+                          route: {cluster: modern_gateway}
+                        - match: {prefix: "/mcp"}
+                          route: {cluster: legacy_envoy}
+                        - match: {prefix: "/healthz"}
+                          direct_response:
+                            status: 200
+                            body: {inline_string: "ok"}
+                http_filters:
+                  - name: envoy.filters.http.ext_authz
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                      grpc_service:
+                        envoy_grpc: {cluster_name: policy_authz}
+                        timeout: 0.5s
+                      failure_mode_allow: false
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+    - name: policy_authz
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 1s
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: policy_authz
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: policy, port_value: 19001}
+    - name: modern_gateway
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 1s
+      load_assignment:
+        cluster_name: modern_gateway
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: gateway, port_value: 8080}
+    - name: legacy_envoy
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 1s
+      load_assignment:
+        cluster_name: legacy_envoy
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: envoy-legacy, port_value: 10001}

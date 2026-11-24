@@ -22,9 +22,19 @@ import (
 func main() {
 	addr := flag.String("addr", ":18080", "listen address")
 	xdsAddr := flag.String("xds-addr", ":18000", "xDS gRPC listen address")
+	configPath := flag.String("config", "", "optional controlplane.Config JSON file")
 	flag.Parse()
 
 	cfg := demoConfig()
+	if *configPath != "" {
+		raw, err := os.ReadFile(*configPath)
+		if err != nil {
+			log.Fatalf("config: %v", err)
+		}
+		if err := json.Unmarshal(raw, &cfg); err != nil {
+			log.Fatalf("config: %v", err)
+		}
+	}
 	mgr, err := controlplane.New(cfg)
 	if err != nil {
 		log.Fatalf("controlplane: %v", err)

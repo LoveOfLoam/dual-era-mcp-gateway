@@ -84,11 +84,17 @@ func TestADSServesCluster(t *testing.T) {
 	if len(resp.Resources) == 0 {
 		t.Fatal("empty cluster response")
 	}
-	var c cluster.Cluster
-	if err := resp.Resources[0].UnmarshalTo(&c); err != nil {
-		t.Fatalf("unmarshal cluster: %v", err)
+	names := map[string]bool{}
+	for _, raw := range resp.Resources {
+		var c cluster.Cluster
+		if err := raw.UnmarshalTo(&c); err != nil {
+			t.Fatalf("unmarshal cluster: %v", err)
+		}
+		names[c.Name] = true
 	}
-	if c.Name != "weather" && c.Name != "crm_rest" {
-		t.Fatalf("cluster = %q", c.Name)
+	for _, want := range []string{"weather", "crm_rest", "modern_facade", "legacy_internal"} {
+		if !names[want] {
+			t.Fatalf("missing cluster %q in %v", want, names)
+		}
 	}
 }

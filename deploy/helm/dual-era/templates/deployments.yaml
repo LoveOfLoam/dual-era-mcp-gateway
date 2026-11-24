@@ -1,0 +1,150 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dual-era-controlplane
+  labels: {app: dual-era-controlplane}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: dual-era-controlplane}
+  template:
+    metadata:
+      labels: {app: dual-era-controlplane}
+    spec:
+      containers:
+        - name: controlplane
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/controlplane"]
+          args: ["-addr", ":18080", "-xds-addr", ":18000", "-config", "/config/controlplane.json"]
+          ports:
+            - {name: http, containerPort: 18080}
+            - {name: xds, containerPort: 18000}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 2
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+      volumes:
+        - name: config
+          configMap: {name: dual-era-config}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dual-era-gateway
+  labels: {app: dual-era-gateway}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: dual-era-gateway}
+  template:
+    metadata:
+      labels: {app: dual-era-gateway}
+    spec:
+      containers:
+        - name: gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/gateway"]
+          args:
+            - "-addr"
+            - ":8080"
+            - "-legacy"
+            - {{ .Values.gateway.legacy | quote }}
+          ports:
+            - {name: http, containerPort: 8080}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 2
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+      volumes:
+        - name: config
+          configMap: {name: dual-era-config}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dual-era-policy
+  labels: {app: dual-era-policy}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: dual-era-policy}
+  template:
+    metadata:
+      labels: {app: dual-era-policy}
+    spec:
+      containers:
+        - name: policy
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/policy"]
+          args: ["-config", "/config/policy.json", "-authz-addr", ":19001", "-ratelimit-addr", ":19002"]
+          ports:
+            - {name: authz, containerPort: 19001}
+            - {name: ratelimit, containerPort: 19002}
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+      volumes:
+        - name: config
+          configMap: {name: dual-era-config}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dual-era-envoy
+  labels: {app: dual-era-envoy}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: dual-era-envoy}
+  template:
+    metadata:
+      labels: {app: dual-era-envoy}
+    spec:
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoyImage.repository }}:{{ .Values.envoyImage.tag }}"
+          imagePullPolicy: {{ .Values.envoyImage.pullPolicy }}
+          args: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+          ports:
+            - {name: http, containerPort: 8080}
+          volumeMounts:
+            - {name: config, mountPath: /etc/envoy, readOnly: true}
+      volumes:
+        - name: config
+          configMap:
+            name: dual-era-config
+            items:
+              - {key: envoy-public.yaml, path: envoy.yaml}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dual-era-envoy-legacy
+  labels: {app: dual-era-envoy-legacy}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: dual-era-envoy-legacy}
+  template:
+    metadata:
+      labels: {app: dual-era-envoy-legacy}
+    spec:
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoyImage.repository }}:{{ .Values.envoyImage.tag }}"
+          imagePullPolicy: {{ .Values.envoyImage.pullPolicy }}
+          args: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+          ports:
+            - {name: mcp, containerPort: 10001}
+          volumeMounts:
+            - {name: config, mountPath: /etc/envoy, readOnly: true}
+      volumes:
+        - name: config
+          configMap:
+            name: dual-era-config
+            items:
+              - {key: envoy-legacy.yaml, path: envoy.yaml}

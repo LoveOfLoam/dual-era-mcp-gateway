@@ -1,6 +1,6 @@
 // Package xds provides a minimal ADS server backed by go-control-plane.
-// The MVP serves CDS clusters derived from SourceSpecs; listeners/routes are
-// still rendered by internal/envoy until the xDS resource builder is extended.
+// The MVP serves CDS/RDS/LDS for the public listener; the internal mcp_router
+// listener remains statically generated until it is moved into xDS.
 package xds
 
 import (
@@ -16,9 +16,7 @@ import (
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cachev3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	serverv3 "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -29,8 +27,10 @@ import (
 
 // Server is a minimal single-node ADS server.
 type Server struct {
-	node  string
-	cache cachev3.SnapshotCache
+	node      string
+	cache     cachev3.SnapshotCache
+	acks      *controlplane.AckStore
+	callbacks *Callbacks
 
 	mu      sync.RWMutex
 	version string
@@ -42,25 +42,25 @@ func New(node string) *Server {
 	if node == "" {
 		node = "dual-era"
 	}
+	acks := controlplane.NewAckStore()
 	return &Server{
-		node:  node,
-		cache: cachev3.NewSnapshotCache(true, cachev3.IDHash{}, nil),
+		node:      node,
+		cache:     cachev3.NewSnapshotCache(true, cachev3.IDHash{}, nil),
+		acks:      acks,
+		callbacks: NewCallbacks(acks),
 	}
 }
 
+// ACKs exposes the ACK/NACK store for status/API use.
+func (s *Server) ACKs() *controlplane.AckStore { return s.acks }
+
 // Apply builds a CDS snapshot from the control-plane config.
 func (s *Server) Apply(ctx context.Context, version string, cfg controlplane.Config) error {
-	resources := make([]types.Resource, 0, len(cfg.Sources))
-	for _, src := range cfg.Sources {
-		c, err := clusterFor(src)
-		if err != nil {
-			return err
-		}
-		resources = append(resources, c)
+	resources, err := buildResources(cfg)
+	if err != nil {
+		return err
 	}
-	snap, err := cachev3.NewSnapshot(version, map[resource.Type][]types.Resource{
-		resource.ClusterType: resources,
-	})
+	snap, err := cachev3.NewSnapshot(version, resources)
 	if err != nil {
 		return fmt.Errorf("xds snapshot: %w", err)
 	}
@@ -91,7 +91,7 @@ func (s *Server) Start(addr string) (string, error) {
 		return "", err
 	}
 	s.grpc = grpc.NewServer()
-	discovery.RegisterAggregatedDiscoveryServiceServer(s.grpc, serverv3.NewServer(context.Background(), s.cache, nil))
+	discovery.RegisterAggregatedDiscoveryServiceServer(s.grpc, serverv3.NewServer(context.Background(), s.cache, s.callbacks))
 	go func() {
 		_ = s.grpc.Serve(lis)
 	}()

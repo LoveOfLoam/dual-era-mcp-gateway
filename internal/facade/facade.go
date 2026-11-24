@@ -27,6 +27,12 @@ type Policy interface {
 	Allow(tenant, tool string) (allowed bool, layer string)
 }
 
+// Metrics is the optional observability hook.
+type Metrics interface {
+	IncAuthDenied()
+	IncRateLimited()
+}
+
 // ServerInfo identifies the gateway in server/discover responses.
 type ServerInfo struct {
 	Name    string `json:"name"`
@@ -42,6 +48,7 @@ type Config struct {
 	AllowedOrigins    []string
 	MaxBodyBytes      int64
 	Policy            Policy
+	Metrics           Metrics
 }
 
 // Facade is the modern MCP HTTP handler.
@@ -91,6 +98,9 @@ func (f *Facade) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if f.cfg.Policy != nil {
 		t, err := f.cfg.Policy.Authenticate(r)
 		if err != nil {
+			if f.cfg.Metrics != nil {
+				f.cfg.Metrics.IncAuthDenied()
+			}
 			writeError(w, nil, http.StatusUnauthorized, mcp.CodeUnauthorized, "unauthenticated")
 			return
 		}
@@ -179,6 +189,9 @@ func (f *Facade) callTool(w http.ResponseWriter, r *http.Request, req mcp.Reques
 			return
 		}
 		if allowed, layer := f.cfg.Policy.Allow(tenant, name); !allowed {
+			if f.cfg.Metrics != nil {
+				f.cfg.Metrics.IncRateLimited()
+			}
 			writeRateLimited(w, req.ID, layer)
 			return
 		}

@@ -38,6 +38,12 @@ func New(spec source.SourceSpec, client *http.Client) (*Adapter, error) {
 	if err != nil || base.Host == "" {
 		return nil, fmt.Errorf("restadapter: invalid baseURL %q", spec.BaseURL)
 	}
+	if isMetadataHost(base.Hostname()) {
+		return nil, fmt.Errorf("restadapter: metadata host %q is not allowed", base.Hostname())
+	}
+	if len(spec.AllowedHosts) > 0 && !hostAllowed(base.Hostname(), spec.AllowedHosts) {
+		return nil, fmt.Errorf("restadapter: host %q is not in allowedHosts", base.Hostname())
+	}
 	if client == nil {
 		client = &http.Client{Timeout: 15 * time.Second}
 	}
@@ -147,3 +153,16 @@ func (a *Adapter) Call(ctx context.Context, name string, args json.RawMessage) (
 
 // Close is a no-op.
 func (a *Adapter) Close() error { return nil }
+
+func isMetadataHost(host string) bool {
+	return host == "169.254.169.254" || host == "metadata.google.internal"
+}
+
+func hostAllowed(host string, allowed []string) bool {
+	for _, a := range allowed {
+		if a == host {
+			return true
+		}
+	}
+	return false
+}

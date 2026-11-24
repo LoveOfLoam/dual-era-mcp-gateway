@@ -130,6 +130,24 @@ func TestPostJSONBody(t *testing.T) {
 	}
 }
 
+func TestRejectsMetadataHost(t *testing.T) {
+	if _, err := New(testSpec("http://169.254.169.254"), nil); err == nil {
+		t.Fatal("expected metadata host rejection")
+	}
+}
+
+func TestAllowedHosts(t *testing.T) {
+	spec := testSpec("https://crm.example.com")
+	spec.AllowedHosts = []string{"crm.example.com"}
+	if _, err := New(spec, nil); err != nil {
+		t.Fatalf("allowed host: %v", err)
+	}
+	spec.BaseURL = "https://evil.example.com"
+	if _, err := New(spec, nil); err == nil {
+		t.Fatal("expected allowlist rejection")
+	}
+}
+
 func TestUnknownTool(t *testing.T) {
 	a, _ := New(testSpec("https://crm.example.com"), nil)
 	resp, err := a.Call(context.Background(), "missing", nil)

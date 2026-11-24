@@ -17,6 +17,13 @@ And **two config layers**:
 - **Provider**: static YAML, OpenAPI, Kubernetes ConfigMap/McpSource manifest, and Nacos Config Service.
 - **ToolSource**: normalized native MCP / REST behind one `ListTools`/`Call`/`Health` contract.
 
+Policy and operations:
+
+- ext_authz gRPC (`cmd/policy`) for API key → tenant / allowlist.
+- ratelimit gRPC with in-process fixed-window limits (Redis is Phase 2).
+- `/metrics` Prometheus text + `X-Trace-Id` propagation.
+- T8 Docker/Envoy harness and Helm chart skeleton; both are environment-dependent.
+
 Planning and evidence:
 
 - [Detailed task plan](task_plan.md) — WBS, gates, risks, runbook, current status.
@@ -59,7 +66,9 @@ go run ./cmd/legacy-mock -addr :9002 -name crm -tools get_customer
 Terminal 3:
 
 ```powershell
-go run ./cmd/gateway -addr :8080 -legacy "weather=http://127.0.0.1:9001/mcp,crm=http://127.0.0.1:9002/mcp"
+go run ./cmd/gateway -addr :8080 `
+  -legacy "weather=http://127.0.0.1:9001/mcp,crm=http://127.0.0.1:9002/mcp" `
+  -policy config/policy.example.json
 ```
 
 Modern discover:
@@ -104,9 +113,9 @@ go run ./cmd/controlplane -addr :18080 -xds-addr :18000
 - `POST /api/v1/apply` — validate/apply a new `controlplane.Config`.
 - `POST /api/v1/rollback` — `{"version":"sha256:..."}`.
 - `GET /api/v1/envoy` — generated draft Envoy topology.
-- `:18000` — ADS/CDS snapshot server (`internal/xds`); it serves clusters derived from `SourceSpec`.
+- `:18000` — ADS server (`internal/xds`); it serves CDS clusters, the public RDS route config, and the public LDS listener.
 
-Current xDS scope: **CDS clusters**; listeners/routes remain statically generated until the resource builder is extended.
+Current xDS scope: **public listener CDS/RDS/LDS**. The internal `mcp_router` listener remains statically generated in the T8/Helm configs.
 
 ## Tests
 
@@ -116,19 +125,22 @@ go vet ./...
 powershell -File scripts/test.ps1
 ```
 
-Optional Envoy validation:
+Optional checks:
 
 ```powershell
+powershell -File scripts/bench.ps1          # in-process facade microbenchmarks
+powershell -File scripts/helm-lint.ps1     # SKIP without Helm
 powershell -File scripts/envoy-validate.ps1
+powershell -File scripts/t8.ps1            # SKIP without Docker/Envoy
 ```
 
-Current status (2026-11-24):
+Current status (2026-11-25):
 
 - T0–T7 boundary tests: **green**.
-- xDS ADS/CDS streaming test: **green**.
-- `go vet`: green.
-- `scripts/test.ps1`: green; Envoy validation **SKIP** (no `envoy` binary).
-- `go test -race`: **SKIP** locally (no C compiler/CGO); run it in Linux CI.
+- xDS ADS/CDS/RDS/LDS and ACK/NACK callback tests: **green**.
+- `go vet`: green; CI race run: **green**.
+- `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
+- `scripts/t8.ps1`: **SKIP** in this environment (Docker daemon unavailable).
 
 See [`docs/test-report.md`](docs/test-report.md) and [`docs/spec/acceptance-tests.md`](docs/spec/acceptance-tests.md).
 
@@ -138,6 +150,7 @@ See [`docs/test-report.md`](docs/test-report.md) and [`docs/spec/acceptance-test
 cmd/
   gateway/          # local dual-era server (no Envoy)
   controlplane/     # config/version/rollback + generated Envoy config
+  policy/           # ext_authz + ratelimit gRPC services
   legacy-mock/      # local legacy MCP server
 internal/
   mcp/              # JSON-RPC, _meta, headers, errors
@@ -146,19 +159,24 @@ internal/
   aggregator/       # multi-source normalization
   registry/         # prefix/sort/collision
   policy/           # API key/tenant/allowlist/rate limit
+  extauthz/         # Envoy ext_authz gRPC server
+  ratelimit/        # Envoy RateLimitService gRPC server
   source/           # SourceSpec + static/OpenAPI/K8s/Nacos providers
   restadapter/      # REST SourceSpec -> legacy MCP client
   controlplane/     # config validation, versions, rollback, ACK model
   envoy/            # draft Envoy config generation
-  xds/              # minimal ADS/CDS server (go-control-plane)
+  xds/              # ADS CDS/RDS/LDS + ACK/NACK callbacks
   edge/             # local path dispatch
   legacyendpoint/   # local legacy /mcp
-  obs/              # reserved
+  obs/              # metrics, JSON logger, trace propagation
 test/boundary/      # T4 dual-era boundary tests
 docs/spec/          # requirements, protocol matrix, tool sources, providers
 docs/superpowers/   # design doc
-scripts/            # PowerShell test/demo scripts
+scripts/            # test/bench/helm/envoy/t8 PowerShell scripts
 deploy/envoy/       # bootstrap for validation
+deploy/t8/          # Docker/Envoy T8 harness
+deploy/helm/dual-era # Helm skeleton
+docs/benchmarks/    # microbenchmark reports
 ```
 
 ## Scope and non-goals
@@ -171,20 +189,27 @@ Implemented:
 - generic REST adapter (path/query/JSON body);
 - tool prefix/sort/collision;
 - API key/tenant/allowlist/rate limit;
+- ext_authz + ratelimit gRPC services;
 - config validation/version/rollback/ACK model;
+- public LDS/RDS plus CDS and ACK/NACK callbacks;
 - draft Envoy topology generation;
-- minimal ADS/CDS xDS server;
-- boundary tests T0–T7 + ADS streaming test.
+- `/metrics`, trace-id propagation, JSON logger;
+- T8 Docker/Envoy harness and Helm skeleton;
+- in-process facade microbenchmarks;
+- boundary tests T0–T7 + ADS streaming tests.
 
-Not implemented (Phase 2):
+Not implemented / not verified:
 
+- T8 actual Envoy run in this environment (Docker unavailable);
 - single-endpoint B2;
 - modern MCP upstream;
-- full LDS/RDS xDS resources (currently CDS only);
-- live Kubernetes informer / Nacos service discovery;
+- internal `mcp_router` LDS resources;
+- TLS/mTLS, SSE long-connection, zero-downtime LDS;
+- live Kubernetes informer / controller / CRDs;
+- Redis-backed ratelimit, JWT, audit;
 - complex REST adapter (OAuth/HMAC/multipart/long-running);
-- real Envoy T8 runtime integration;
-- OAuth/OIDC, Redis, canary, multi-region.
+- real 500 RPS / k6 / chaos reports;
+- OAuth/OIDC, canary, multi-region.
 
 ## GitHub
 

@@ -227,13 +227,35 @@ Status rules:
 |---|---|
 | `go test ./...` | PASS |
 | `go vet ./...` | PASS |
-| `internal/xds` ADS/CDS stream | PASS |
+| `internal/xds` ADS CDS/RDS/LDS + ACK/NACK | PASS |
+| `internal/extauthz` / `internal/ratelimit` | PASS |
 | `scripts/test.ps1` | PASS；Envoy validate SKIP |
 | `go test -race ./...` | BLOCKED locally（no CGO/gcc）；CI configured |
 | T8 Envoy runtime | BLOCKED（no Envoy/Docker） |
 
-## 14. 结论
+## 14. 2026-11-25 P2 delta
 
-- B1 的**协议/聚合/策略/Provider/控制面/ADS/CDS** 在 Go 层有测试证据。
+The per-ID tables above are the v2 baseline. This delta records the P2 additions
+without pretending the remaining gaps are closed:
+
+| 需求 | 新增证据 | 状态变化 |
+|---|---|---|
+| FR-CP-05 ADS | `internal/xds` public CDS/RDS/LDS + ADS tests | PARTIAL → PARTIAL（public only） |
+| FR-CP-06 ACK/NACK | `internal/xds/callbacks.go` + test | PARTIAL → PARTIAL（no live Envoy） |
+| FR-DP-02 filter chain | T8 public Envoy `ext_authz` | PARTIAL（no TLS/ratelimit) |
+| FR-POL-06 429 | `internal/ratelimit` body/layer/Retry-After | PARTIAL（no Envoy local reply） |
+| FR-POL-06/08 | `cmd/gateway -policy` + ext_authz/ratelimit services | PARTIAL |
+| FR-REST-05 SSRF | metadata host reject + allowedHosts | PARTIAL → DONE（adapter level） |
+| FR-OBS-01/04/05 | `/metrics`, JSON logger, trace id | TODO → PARTIAL |
+| FR-OPS-02 Helm | `deploy/helm/dual-era` skeleton | TODO → PARTIAL |
+| FR-OPS-03 CI | race green; no lint/integration | PARTIAL |
+| NFR-PERF | facade microbenchmark | TODO → PARTIAL（not 500 RPS） |
+
+Still TODO/BLOCKED: T8 runtime, TLS/mTLS, SSE, Redis, CRD/controller,
+internal `mcp_router` LDS, k6/chaos, demo, ADR files.
+
+## 15. 结论
+
+- B1 的**协议/聚合/策略/Provider/控制面/ADS/CDS/RDS/LDS** 在 Go 层有测试证据。
 - Envoy/K8s/Redis/可观测/T8 仍是设计或配置草案；不能写成生产完成。
 - 面试讲法：先讲“为什么双端点”和“哪些边界测试证明”，再主动讲“哪些没跑、为什么”。

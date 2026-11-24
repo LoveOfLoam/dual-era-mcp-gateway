@@ -49,9 +49,9 @@ Client
 
 - 两种工具源：native MCP + REST。
 - 两层配置抽象：Provider（static/OpenAPI/K8s manifest/Nacos）+ ToolSource（native/REST）。
-- 控制面：配置校验、SHA-256 版本、快照、历史/回滚、ACK/NACK 模型、Envoy 配置生成、最小 ADS/CDS xDS。
+- 控制面：配置校验、SHA-256 版本、快照、历史/回滚、ACK/NACK 模型、Envoy 配置生成、public CDS/RDS/LDS xDS。
 - 策略：API key、tenant 派生、allowlist、进程内固定窗口限流。
-- 测试：T0–T7 + ADS/CDS streaming test 全部通过；T8 未跑。
+- 测试：T0–T7 + ADS CDS/RDS/LDS + ACK/NACK + ext_authz/ratelimit 测试通过；T8 未跑。
 
 ### 0.3 不能夸大的部分
 
@@ -60,7 +60,7 @@ Client
 - TLS/HTTP2 listener、`mcp` filter、`ext_authz`、`ratelimit`、`mcp_router`、`mcp_multicluster` 的真实行为；
 - Envoy 配置是否 `--mode validate` 通过（本机无 Envoy）；
 - SSE 长连接、LDS drain、零停机；
-- xDS 的 LDS/RDS 资源（当前只有 CDS）；
+- internal `mcp_router` listener 的 LDS 资源（public LDS/RDS 已做）；
 - K8s CRD/controller/admission webhook；
 - ext_authz/ratelimit gRPC 服务、Redis、JWT；
 - 生产级可观测、Helm/kind、压测/混沌。
@@ -73,7 +73,7 @@ MVP 代码级完成：
 
 - T0–T7 全绿；
 - `go vet` 全绿；
-- ADS/CDS streaming test 绿；
+- ADS CDS/RDS/LDS streaming + ACK/NACK callback 测试绿；
 - 所有 P0 库级需求有测试；
 - 文档明确区分“已验证/未验证”。
 
@@ -95,7 +95,7 @@ MVP 代码级完成：
 |---|---|---|
 | 协议 | legacy `/mcp` + modern `/modern/mcp` | `[x]` 本地；Envoy 运行时 `[!]` |
 | 控制面 | 配置模型、校验、版本、快照、回滚、ACK 模型 | `[x]` |
-| xDS | ADS/CDS 最小实现 | `[x]` CDS；LDS/RDS `[ ]` |
+| xDS | public CDS/RDS/LDS + ACK/NACK | `[~]` public 完成；internal listener 静态 |
 | 数据面 | public path routing、legacy 聚合、modern facade | `[~]` 本地 Go；Envoy `[!]` |
 | 策略 | API key/tenant/allowlist/内存限流 | `[x]` 库；ext_authz/Redis `[ ]` |
 | 工具源 | native MCP + REST | `[x]` 库；复杂 REST `[ ]` |
@@ -106,7 +106,7 @@ MVP 代码级完成：
 ### 1.2 Phase 2（Stretch）
 
 - modern MCP upstream（直连 2026-07-28 后端）。
-- full LDS/RDS xDS 资源生成。
+- internal `mcp_router` listener 的 LDS 资源生成。
 - canary（node metadata / 独立 Deployment）。
 - JWT/OIDC、Redis 分布式限流、并发限制。
 - stdio bridge。
@@ -179,7 +179,7 @@ MVP 代码级完成：
 | 组件 | 职责 | 不做什么 | 当前 |
 |---|---|---|---|
 | `cmd/controlplane` | 配置 API、版本/回滚、Envoy 配置生成、xDS CDS | 不转发 MCP 请求 | `[x]` 本地 |
-| `internal/xds` | ADS/CDS snapshot | 不生成 LDS/RDS | `[~]` CDS |
+| `internal/xds` | ADS CDS/RDS/LDS + ACK/NACK | 不生成 internal listener LDS | `[~]` public 完成 |
 | `cmd/gateway` | 本地双端点 + 聚合 | 不是生产 Envoy 替代 | `[x]` 本地 |
 | `internal/facade` | 2026-07-28 入口 | 不处理 legacy session | `[x]` |
 | `internal/legacyendpoint` | 本地 legacy `/mcp` | 不替代 Envoy `mcp_router` | `[x]` 测试/本地 |
@@ -276,9 +276,9 @@ MVP 代码级完成：
 | B-03 | SHA-256 版本 | P0 | B-01 | 同配置版本稳定 | `[x]` |
 | B-04 | Snapshot | P0 | B-03 | current/history 可查 | `[x]` |
 | B-05 | 回滚 | P0 | B-04 | 按 version 恢复 | `[x]` |
-| B-06 | ACK/NACK 模型 | P0 | B-04 | ack/nack/converged 测试 | `[x]` 模型 |
-| B-07 | ADS/CDS | P0 | B-04 | gRPC ADS 返回 cluster | `[x]` 最小 |
-| B-08 | LDS/RDS xDS | P0 | B-07 | listener/route 资源 + Envoy 验证 | `[ ]` |
+| B-06 | ACK/NACK 模型 | P0 | B-04 | ack/nack/converged 测试 | `[x]` 模型 + xDS callback |
+| B-07 | ADS/CDS/RDS/LDS | P0 | B-04 | gRPC ADS 返回 cluster/route/listener | `[x]` public 资源 |
+| B-08 | LDS/RDS xDS | P0 | B-07 | listener/route 资源 + Envoy 验证 | `[ ]` 仅 public；internal `mcp_router` 仍静态 |
 | B-09 | 管理 API | P0 | B-04 | status/config/revisions/apply/rollback/envoy | `[~]` 无鉴权/dataplanes/tools |
 | B-10 | CRD + controller | P0 | B-01 | `kubectl apply` → snapshot | `[ ]` |
 | B-11 | Admission webhook | P0 | B-10 | 非法 CRD 拒绝 | `[ ]` |
@@ -295,7 +295,7 @@ MVP 代码级完成：
 | C-01 | Public path routing | P0 | B-07 | `/mcp` 与 `/modern/mcp` 分流 | `[~]` 本地 edge；Envoy 未跑 |
 | C-02 | Legacy `/mcp` | P0 | C-01 | initialize/list/call | `[x]` 本地；Envoy `[ ]` |
 | C-03 | Modern `/modern/mcp` | P0 | C-01 | discover/list/call | `[x]` |
-| C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` 生成器草案 |
+| C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz；无 TLS/ratelimit filter |
 | C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[ ]` |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
 | C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[ ]` |
@@ -305,7 +305,7 @@ MVP 代码级完成：
 | C-11 | 零停机 LDS/CDS | P0 | C-06 | 100 次变更 + SSE | `[ ]` |
 | C-12 | 优雅 drain | P0 | C-01 | 滚动更新 | `[ ]` |
 | C-13 | Access log JSON | P0 | C-01 | 字段稳定 | `[ ]` |
-| C-14 | OTel Trace | P0 | C-01 | traceparent 传播 | `[ ]` |
+| C-14 | OTel Trace | P0 | C-01 | traceparent 传播 | `[~]` X-Trace-Id/traceparent；无 OTel exporter |
 
 ### WS-D 策略面
 
@@ -316,14 +316,14 @@ MVP 代码级完成：
 | D-03 | 工具 allowlist | P0 | D-01 | 越权 403 | `[x]` |
 | D-04 | 内存 RPM 限流 | P0 | D-01 | 超限 429/layer | `[x]` |
 | D-05 | Redis Lua 限流 | P0 | D-04 | 原子、跨副本 | `[ ]` |
-| D-06 | ext_authz gRPC | P0 | D-01 | Envoy 可调用 | `[ ]` |
-| D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[ ]` |
-| D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[~]` 只有 layer |
+| D-06 | ext_authz gRPC | P0 | D-01 | Envoy 可调用 | `[x]` 服务 + 单测；T8 未跑 |
+| D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[x]` 服务 + 单测；未接 Redis |
+| D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[~]` ratelimit 服务有 body/Retry-After；Envoy local reply 未验证 |
 | D-09 | JWT/JWKS | P0 | D-06 | 过期/错 audience 401 | `[ ]` |
 | D-10 | 审计 JSONL | P0 | D-06 | 无 payload/密钥 | `[ ]` |
 | D-11 | 策略指标 | P0 | D-06 | decisions/degraded | `[ ]` |
 | D-12 | 失败模式 | P0 | D-06 | auth fail-closed；Redis fail-open | `[~]` 仅库内 |
-| D-13 | 接入 `cmd/gateway` | P0 | D-01 | 本地网关真正启用策略 | `[~]` facade 支持，命令未接线 |
+| D-13 | 接入 `cmd/gateway` | P0 | D-01 | 本地网关真正启用策略 | `[x]` `-policy` 已接线；legacy 路径仍由 Envoy/ext_authz 负责 |
 
 ### WS-E 工具源 / Provider
 
@@ -347,18 +347,18 @@ MVP 代码级完成：
 
 | ID | 任务 | 优先级 | 依赖 | 验收 | 状态 |
 |---|---|---|---|---|---|
-| F-01 | 控制面指标 | P0 | B-09 | Prometheus | `[ ]` |
+| F-01 | 控制面指标 | P0 | B-09 | Prometheus | `[x]` 本地 `/metrics` 计数器；无控制面历史指标 |
 | F-02 | Envoy 指标 | P0 | C-01 | QPS/latency/5xx | `[ ]` |
-| F-03 | 策略指标 | P0 | D-06 | authz/ratelimit | `[ ]` |
-| F-04 | 结构化日志 | P0 | C-01 | JSON/字段稳定 | `[~]` 仅零散 log |
-| F-05 | Trace | P0 | C-14 | Tempo/Jaeger | `[ ]` |
+| F-03 | 策略指标 | P0 | D-06 | authz/ratelimit | `[~]` facade 计数器；无 gRPC 指标 |
+| F-04 | 结构化日志 | P0 | C-01 | JSON/字段稳定 | `[~]` JSON logger 库；`cmd/gateway` 仍用 log |
+| F-05 | Trace | P0 | C-14 | Tempo/Jaeger | `[~]` trace id 传播；无 OTel |
 | F-06 | Grafana 看板 | P0 | F-01..F-03 | 四块看板 | `[ ]` |
 | F-07 | 告警规则 | P0 | F-01 | NACK/5xx/429/Redis/证书 | `[ ]` |
-| F-08 | Runbook | P0 | C-11 | 启动/变更/故障/回滚 | `[~]` README 简版 |
-| F-09 | kind + Helm | P0 | C-05 | 5 分钟起 | `[ ]` |
-| F-10 | docker-compose | P1 | C-05 | 本地一键 | `[ ]` |
-| F-11 | CI | P0 | G-01..G-08 | build/vet/test/race/lint/integration | `[~]` test/vet/build；无 lint/集成 |
-| F-12 | T8 harness | P0 | F-09/F-10 | Envoy 拓扑测试 | `[!]` 环境阻塞 |
+| F-08 | Runbook | P0 | C-11 | 启动/变更/故障/回滚 | `[~]` README/计划简版 |
+| F-09 | kind + Helm | P0 | C-05 | 5 分钟起 | `[~]` Helm 骨架；无 kind/集群验证 |
+| F-10 | docker-compose | P1 | C-05 | 本地一键 | `[x]` T8 compose；本机 Docker 不可用 |
+| F-11 | CI | P0 | G-01..G-08 | build/vet/test/race/lint/integration | `[~]` test/vet/build/race；无 lint/集成 |
+| F-12 | T8 harness | P0 | F-09/F-10 | Envoy 拓扑测试 | `[~]` harness 已写；运行阻塞 |
 | F-13 | 依赖/镜像扫描 | P1 | F-11 | govulncheck/trivy | `[ ]` |
 
 ### WS-G 测试与文档
@@ -376,13 +376,30 @@ MVP 代码级完成：
 | G-09 | T8 Envoy runtime | P0 | F-12 | 真实拓扑 | `[!]` |
 | G-10 | AC-01..AC-30 | P0 | T0..T8 | 全部通过或有明确 skip | `[~]` 子集 |
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
-| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[ ]` |
-| G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[ ]` |
-| G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` 部分 |
+| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` facade 微基准；无 500 RPS/SSE |
+| G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` 5xx/并发/body 限制；无 kill/Redis/NACK |
+| G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` API key/allowlist/Origin/SSRF allowlist/body |
 | G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[ ]` |
-| G-16 | ADR-001..007 | P1 | A-05 | 3 篇以上 | `[~]` |
+| G-16 | ADR-001..007 | P1 | A-05 | 3 篇以上 | `[~]` 决策表，无独立 ADR 文件 |
 | G-17 | PRD traceability | P0 | A-01 | FR/AC 映射 | `[x]` |
-| G-18 | commit/push | P0 | G-01..G-08 | 远端同步 | `[~]` 本地 ahead，push 凭据失败 |
+| G-18 | commit/push | P0 | G-01..G-08 | 远端同步 | `[~]` P2 变更待提交/推送 |
+
+### 3.1 2026-11-25 P2 增量（本轮完成）
+
+| 项 | 结果 | 证据 |
+|---|---|---|
+| ext_authz gRPC | API key/tenant/allowlist，401/403 | `internal/extauthz` 单测 |
+| ratelimit gRPC | tenant/tool RPM、429 body、layer、Retry-After | `internal/ratelimit` 单测 |
+| gateway 策略接线 | `cmd/gateway -policy` | 编译 + facade 策略测试 |
+| public xDS | CDS + RDS + LDS | `internal/xds/full_test.go` |
+| ACK/NACK | go-control-plane callback → AckStore | `internal/xds/callbacks_test.go` |
+| 可观测 | `/metrics`、JSON logger、trace id | `internal/obs` 单测 |
+| REST SSRF | metadata host 拒绝 + allowedHosts | `internal/restadapter` 单测 |
+| T8 harness | public/internal Envoy + policy + mocks | `deploy/t8/`、`scripts/t8.ps1`（本机 SKIP） |
+| Helm | 5 个 Deployment + Service + ConfigMap | `deploy/helm/dual-era`（无 helm/集群验证） |
+| 微基准 | facade list/call | `docs/benchmarks/2026-11-25.md` |
+
+仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。
 
 ---
 
@@ -407,7 +424,7 @@ MVP 代码级完成：
 | W1 | Spike + 脚手架 | `[x]` Gate 1、仓库、CI |
 | W2 | 控制面骨架 | `[~]` 配置/版本/CDS；CRD/controller 未做 |
 | W3 | 聚合 + stdio | `[~]` native/REST 聚合；stdio 未做 |
-| W4 | 策略面 | `[~]` 库策略；ext_authz/Redis 未做 |
+| W4 | 策略面 | `[~]` ext_authz/ratelimit 服务已做；Redis/TLS/Envoy 运行时未验 |
 | W5 | 2026-07-28 + REST | `[~]` facade/REST adapter；Envoy conformance 未做 |
 | W6 | 零停机 | `[ ]` |
 | W7 | 可观测/安全/混沌 | `[ ]` |
@@ -462,7 +479,7 @@ MVP 代码级完成：
 | T3 | legacy client/session | `internal/legacy`, `legacyendpoint` | `[x]` |
 | T4 | dual-era + mixed sources | `test/boundary` | `[x]` |
 | T5 | policy | `internal/policy`, facade policy tests | `[x]` |
-| T6 | control plane + ADS/CDS | `internal/controlplane`, `internal/xds` | `[x]` |
+| T6 | control plane + ADS CDS/RDS/LDS + ACK/NACK | `internal/controlplane`, `internal/xds`, `extauthz`, `ratelimit` | `[x]` |
 | T7 | resilience/concurrency | `internal/facade/resilience_test.go` | `[x]` |
 | T8 | Envoy runtime | `scripts/envoy-validate.ps1` | `[!]` |
 
@@ -496,7 +513,7 @@ go vet ./...
 | LDS 变更导致 SSE 抖动 | 高 | 高 | `mcp_multicluster`/CDS；drain；测试 | 未测 |
 | `mcp_router` 不支持 modern | 高 | 高 | B1 facade；modern upstream Phase 2 | 已规避 |
 | 单 listener bridge+router 不兼容 | 高 | 中 | 双端点/独立 listener/Go adapter | 已规避 |
-| xDS 学习曲线 | 高 | 中 | 先 CDS + 静态 LDS/RDS | CDS 已跑 |
+| xDS 学习曲线 | 高 | 中 | public CDS/RDS/LDS；internal 仍静态 | public 已测 |
 | 环境缺 Envoy/Docker/gcc | 高 | 高 | CI/外部环境；明确 SKIP | 阻塞 T8/race |
 | 范围膨胀 | 高 | 高 | WBS/Gate/Out of Scope | 需持续控制 |
 | 只有库没有运行时 | 中 | 高 | T8/集成列为 P0；README 诚实 | 当前主要风险 |
@@ -533,7 +550,7 @@ go run ./cmd/controlplane -addr :18080 -xds-addr :18000
 - `POST /api/v1/apply`：应用 `controlplane.Config`。
 - `POST /api/v1/rollback`：按 version 回滚。
 - `GET /api/v1/envoy`：生成 draft 拓扑。
-- `:18000`：ADS/CDS。
+- `:18000`：ADS CDS/RDS/LDS（public listener）。
 
 ### 8.3 回滚
 
@@ -587,13 +604,13 @@ powershell -File scripts/envoy-validate.ps1
 | D-004 | modern facade 用 Go | 2026-07-28 聚合/校验可测 |
 | D-005 | native + REST 归一化 | 一套 catalog/策略 |
 | D-006 | Provider 与 ToolSource 分层 | K8s/Nacos 不污染 facade |
-| D-007 | 先 CDS xDS，LDS/RDS 后补 | 降低 xDS 风险 |
+| D-007 | 先 public CDS/RDS/LDS，internal listener 后补 | 降低 xDS 风险 |
 | D-008 | TDD 边界测试 | 完成标准可验证 |
 
 ### 10.2 未决（Gate 6/7 前）
 
 1. LDS 变更是否真的 drain？SSE 允许一次重连还是必须零中断？
-2. xDS 是否在 MVP 内补 LDS/RDS，还是保持“CDS + 静态拓扑”并明确标注？
+2. internal `mcp_router` listener 是否迁入 xDS，还是长期保持静态拓扑？
 3. ext_authz/ratelimit 是独立 Go 服务，还是先 Envoy local policy？
 4. Redis 限流是否进入 MVP，还是保持进程内并写明单副本限制？
 5. K8s CRD/controller 是否值得在 27 届时间内做，还是用文件配置 + 管理 API？
@@ -611,7 +628,7 @@ powershell -File scripts/envoy-validate.ps1
 2. 用 Docker/Envoy 跑 T8：public path + internal `mcp_router` + REST bridge。
 3. 补 TLS/HTTP2、body/header 限制、SSE。
 4. 实现 ext_authz/ratelimit gRPC（先最小，再接 Envoy）。
-5. 补 LDS/RDS xDS 或明确保持静态拓扑。
+5. 补 internal listener LDS，或明确长期保持静态拓扑。
 
 ### P1：平台纵向切片
 
@@ -635,3 +652,4 @@ powershell -File scripts/envoy-validate.ps1
 |---|---|---|
 | 2026-11-24 | v1 | 初始任务清单；B1 双端点；T0–T7；xDS deferred |
 | 2026-11-25 | v2 | 按 PRD 重写：架构/职责/端口/WBS/Gate/追踪/测试/风险/Runbook；补充 K8s/Nacos/REST adapter/ADS/CDS 状态；明确 T8/race 环境阻塞与“库级完成≠生产完成” |
+| 2026-11-25 | v3 | P2 增量：ext_authz/ratelimit gRPC、gateway 策略接线、public CDS/RDS/LDS、ACK/NACK callback、`/metrics`/trace、T8/Helm harness、REST SSRF allowlist、facade 微基准；T8 运行仍阻塞 |

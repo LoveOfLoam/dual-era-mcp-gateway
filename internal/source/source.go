@@ -40,15 +40,16 @@ func (t ToolSpec) SchemaJSON() json.RawMessage {
 
 // SourceSpec is the normalized source definition produced by a Provider.
 type SourceSpec struct {
-	Name     string            `json:"name" yaml:"name"`
-	Type     Type              `json:"type" yaml:"type"`
-	Protocol string            `json:"protocol,omitempty" yaml:"protocol,omitempty"`
-	Endpoint string            `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
-	BaseURL  string            `json:"baseURL,omitempty" yaml:"baseURL,omitempty"`
-	Prefix   string            `json:"prefix,omitempty" yaml:"prefix,omitempty"`
-	OpenAPI  string            `json:"openapi,omitempty" yaml:"openapi,omitempty"`
-	Headers  map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
-	Tools    []ToolSpec        `json:"tools,omitempty" yaml:"tools,omitempty"`
+	Name         string            `json:"name" yaml:"name"`
+	Type         Type              `json:"type" yaml:"type"`
+	Protocol     string            `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Endpoint     string            `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	BaseURL      string            `json:"baseURL,omitempty" yaml:"baseURL,omitempty"`
+	Prefix       string            `json:"prefix,omitempty" yaml:"prefix,omitempty"`
+	OpenAPI      string            `json:"openapi,omitempty" yaml:"openapi,omitempty"`
+	Headers      map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+	AllowedHosts []string          `json:"allowedHosts,omitempty" yaml:"allowedHosts,omitempty"`
+	Tools        []ToolSpec        `json:"tools,omitempty" yaml:"tools,omitempty"`
 }
 
 // Provider loads source definitions from a backend (file, K8s, Nacos).

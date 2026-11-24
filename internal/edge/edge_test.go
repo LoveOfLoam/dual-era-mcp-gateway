@@ -37,6 +37,18 @@ func TestUnknownPath(t *testing.T) {
 	}
 }
 
+func TestMetricsEndpoint(t *testing.T) {
+	s := NewWithMetrics(marker("legacy"), marker("modern"), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("mcp_metric 1\n"))
+	}))
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	rec := httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || rec.Body.String() != "mcp_metric 1\n" {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+}
+
 func TestHealth(t *testing.T) {
 	s := New(marker("legacy"), marker("modern"))
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
