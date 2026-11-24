@@ -54,6 +54,15 @@ services:
     expose: ["8080"]
     depends_on: [weather, crm]
 
+  sse-shim:
+    build:
+      context: ../..
+      dockerfile: deploy/t8/Dockerfile.prebuilt
+    entrypoint: ["/sse-shim"]
+    command: ["-addr", ":18081", "-upstream", "http://envoy-legacy:10001/mcp"]
+    expose: ["18081"]
+    depends_on: [envoy-legacy]
+
   envoy-rest:
     image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.40.2}
     command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]

@@ -59,6 +59,14 @@ static_resources:
                               - actions:
                                   - request_headers: {header_name: "x-tenant-id", descriptor_key: "tenant"}
                                   - request_headers: {header_name: "mcp-name", descriptor_key: "tool"}
+                        - match:
+                            path: "/mcp"
+                            headers:
+                              - name: ":method"
+                                exact_match: "GET"
+                          route: {cluster: sse_shim}
+                        - match: {prefix: "/mcp/message"}
+                          route: {cluster: sse_shim}
                         - match: {prefix: "/mcp"}
                           route:
                             cluster: legacy_envoy
@@ -109,6 +117,17 @@ static_resources:
               - endpoint:
                   address:
                     socket_address: {address: policy, port_value: 19001}
+    - name: sse_shim
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 1s
+      load_assignment:
+        cluster_name: sse_shim
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: sse-shim, port_value: 18081}
     - name: policy_ratelimit
       type: STRICT_DNS
       dns_lookup_family: V4_ONLY

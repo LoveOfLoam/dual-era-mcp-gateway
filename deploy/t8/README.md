@@ -45,9 +45,10 @@ powershell -File scripts/t8.ps1
   demo RPM=60 policy, and `redis-cli DBSIZE` verifies the limiter key.
 - It includes the **REST bridge** (`envoy-rest` + `mcp_json_rest_bridge`) as
   `rest__*` tools aggregated by `mcp_router`.
-- It does **not** include SSE long connections or 100-change zero-downtime. A
-  legacy SSE GET currently returns 405 from `mcp_router`; see
-  `docs/t8-report.md`.
+- It includes **legacy SSE** through `cmd/sse-shim` (`GET /mcp` and
+  `/mcp/message`); raw `mcp_router` GET still returns 405, so the shim is the
+  public SSE path.
+- It does **not** include 100-change zero-downtime.
 - The image uses `Dockerfile.prebuilt`: `scripts/t8.ps1` cross-compiles Linux
   binaries first, avoiding Docker-build-time `go mod download` (network blocked).
 - The **TLS overlay** (`docker-compose.tls.yml` + `envoy-public-tls.yaml` +

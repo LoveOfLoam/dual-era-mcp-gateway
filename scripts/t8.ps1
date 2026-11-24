@@ -27,6 +27,8 @@ function Build-T8Binaries {
         if ($LASTEXITCODE -ne 0) { throw "build policy failed" }
         go build -trimpath -o (Join-Path $bin "rest-mock") ./cmd/rest-mock
         if ($LASTEXITCODE -ne 0) { throw "build rest-mock failed" }
+        go build -trimpath -o (Join-Path $bin "sse-shim") ./cmd/sse-shim
+        if ($LASTEXITCODE -ne 0) { throw "build sse-shim failed" }
     } finally {
         Pop-Location
         if ($oldGOOS) { $env:GOOS = $oldGOOS } else { Remove-Item Env:GOOS -ErrorAction SilentlyContinue }
@@ -36,6 +38,12 @@ function Build-T8Binaries {
 }
 
 Build-T8Binaries
+$sseExe = Join-Path $env:TEMP ("ssecheck-" + $PID + ".exe")
+Push-Location $root
+try {
+    go build -o $sseExe ./cmd/ssecheck
+    if ($LASTEXITCODE -ne 0) { throw "ssecheck build failed" }
+} finally { Pop-Location }
 if ($TLS) {
     & (Join-Path $PSScriptRoot "gen-dev-cert.ps1") | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "dev certificate generation failed" }
@@ -157,6 +165,18 @@ try {
         throw "legacy catalog missing expected tools: $($names -join ',')"
     }
 
+    Write-Host "==> legacy SSE transport"
+    $sseArgs = @("-url", "$baseUrl/mcp", "-token", "test")
+    if ($TLS) { $sseArgs += "-insecure" }
+    $sseOK = $false
+    for ($i = 0; $i -lt 30; $i++) {
+        $sseOut = & $sseExe @sseArgs 2>&1
+        if ($LASTEXITCODE -eq 0 -and ($sseOut -join ' ') -match 'sse_ok=true') { $sseOK = $true; break }
+        Start-Sleep -Seconds 1
+    }
+    if (-not $sseOK) { throw "SSE check failed: $($sseOut -join ' ')" }
+    Write-Host "==> $($sseOut -join ' ')"
+
     Write-Host "==> legacy tools/call + ratelimit 429"
     # Let the policy/ratelimit gRPC service and Redis connection settle; while it
     # is down the filter is fail-open and those calls are not counted.
@@ -235,4 +255,5 @@ try {
         $ErrorActionPreference = "Continue"
         docker compose @composeArgs down -v *> $null
     }
+    Remove-Item $sseExe -Force -ErrorAction SilentlyContinue
 }

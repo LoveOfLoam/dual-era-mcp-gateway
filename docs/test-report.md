@@ -91,7 +91,7 @@ powershell -File scripts/test.ps1
 | T5 | `internal/policy`, `internal/facade/policy_test.go` |
 | T6 | `internal/controlplane`, `internal/extauthz`, `internal/ratelimit`, `internal/xds` ADS tests |
 | T7 | `internal/facade/resilience_test.go` |
-| T8 | **PASS** — HTTP + TLS (`-TLS`) with `envoyproxy/envoy:v1.40.2`; ext_authz + Redis ratelimit (60×200 / 10×429) + REST bridge (`rest__get_customer`); TLS1.3+ALPN h2 + actual HTTP/2 200; see `docs/t8-report.md` |
+| T8 | **PASS** — HTTP + TLS (`-TLS`) with `envoyproxy/envoy:v1.40.2`; ext_authz + Redis ratelimit (60×200 / 10×429) + REST bridge (`rest__get_customer`) + SSE shim; TLS1.3+ALPN h2 + actual HTTP/2 200; see `docs/t8-report.md` |
 
 ## Skipped / limitations
 
@@ -108,4 +108,4 @@ powershell -File scripts/test.ps1
 
 ## Verdict
 
-T0–T7 pass under `go test ./...` and `go vet ./...`; `internal/xds` passes ADS CDS/RDS/LDS and ACK/NACK tests. T8 passes against the real Docker/Envoy topology (Envoy 1.40.2) for the base path split, `mcp_router`, ext_authz, Redis-backed ratelimit (60×200 / 10×429, `DBSIZE=1`), REST bridge (`rest__get_customer`), modern facade, and the TLS overlay (TLS1.3 + ALPN h2 + actual HTTP/2 initialize). SSE remains separate (legacy GET returns 405).
+T0–T7 pass under `go test ./...` and `go vet ./...`; `internal/xds` passes ADS CDS/RDS/LDS and ACK/NACK tests. T8 passes against the real Docker/Envoy topology (Envoy 1.40.2) for the base path split, `mcp_router`, ext_authz, Redis-backed ratelimit (60×200 / 10×429, `DBSIZE=1`), REST bridge (`rest__get_customer`), modern facade, TLS overlay (TLS1.3 + ALPN h2 + actual HTTP/2 initialize), and legacy SSE via `cmd/sse-shim`. Raw `mcp_router` GET/SSE remains 405; the shim is the public SSE path.

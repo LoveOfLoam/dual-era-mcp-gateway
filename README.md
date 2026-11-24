@@ -148,7 +148,8 @@ Current status (2026-11-25):
   See [`docs/t8-report.md`](docs/t8-report.md). HTTP and `-TLS` overlays both PASS;
   TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`), the REST
   bridge is aggregated as `rest__*`, and ratelimit uses Redis
-  (60×200 / 10×429, `DBSIZE=1`). SSE is not covered.
+  (60×200 / 10×429, `DBSIZE=1`). Legacy SSE is served by `cmd/sse-shim` and
+  T8-tested; raw `mcp_router` GET is still 405.
 
 See [`docs/test-report.md`](docs/test-report.md) and [`docs/spec/acceptance-tests.md`](docs/spec/acceptance-tests.md).
 
@@ -162,6 +163,8 @@ cmd/
   legacy-mock/      # local legacy MCP server
   loadgen/          # local load generator CLI
   stdio-bridge/     # stdio MCP -> HTTP /mcp bridge
+  sse-shim/         # legacy GET/SSE -> internal POST MCP
+  ssecheck/         # SSE transport checker
   admission/        # ValidatingAdmissionWebhook
   controller/       # ConfigMap directory reconcile -> control plane
 internal/
@@ -170,6 +173,7 @@ internal/
   legacy/           # legacy HTTP client + session
   modernclient/     # 2026-07-28 stateless MCP client
   stdio/            # stdio JSON-RPC bridge + HTTP handler
+  sse/              # legacy SSE transport shim
   admission/        # AdmissionReview validation for McpSource/McpConsumer
   controller/       # directory/ConfigMap -> controlplane.Config reconcile
   load/             # local HTTP load generator
@@ -239,11 +243,11 @@ Implemented:
 
 Not implemented / not verified:
 
-- T8 coverage of SSE (legacy GET returns 405; TLS, HTTP/2, and Redis ratelimit are PASS);
+- raw `mcp_router` GET/SSE (405); the public SSE path is `cmd/sse-shim` and is T8-tested;
 - single-endpoint B2;
 - full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;
-- TLS/mTLS runtime validation (T8 TLS passes; mTLS not tested), SSE (T8 `mcp_router` returns 405), zero-downtime LDS;
+- TLS/mTLS runtime validation (T8 TLS passes; mTLS not tested), zero-downtime LDS;
 - live Kubernetes informer / controller / CRDs;
 - Redis production HA/rotation validation (T8 uses a single Redis container); JWT;
 - complex REST adapter multipart/long-running (OAuth2/HMAC are implemented);

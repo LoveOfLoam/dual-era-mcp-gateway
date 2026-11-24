@@ -68,7 +68,8 @@ used for the actual HTTP/2 request.
   10 calls returned 429 in the 70-call burst (policy RPM=60); `redis-cli DBSIZE`
   showed the limiter key.
 - TLS overlay: same initialize/list/ratelimit checks over HTTPS; TLSv1.3 + ALPN h2
-  negotiated; actual HTTP/2 `initialize` returns `status=200 proto=HTTP/2.0`.
+  negotiated; actual HTTP/2 `initialize` returns `status=200 proto=HTTP/2.0`;
+- legacy SSE through `cmd/sse-shim`: endpoint event + initialize + tools/list.
 
 ## Issues fixed during the run
 
@@ -88,23 +89,26 @@ used for the actual HTTP/2 request.
 6. **Catalog fanout race** → `tools/list` could return only one backend right
    after startup; the script now retries until both tools appear.
 
-## SSE finding
+## SSE transport
 
-A legacy SSE probe was run:
+Raw `mcp_router` GET `/mcp` returns 405, so the public listener routes
+`GET /mcp` and `/mcp/message` to `cmd/sse-shim`; POST `/mcp` stays on
+`mcp_router`. The shim implements the legacy SSE endpoint event and forwards
+JSON-RPC messages to the internal Envoy.
+
+T8 runs `cmd/ssecheck`:
 
 ```text
-GET /mcp with Accept: text/event-stream and Mcp-Session-Id
--> HTTP/1.1 405 Method Not Allowed
+==> legacy SSE transport
+==> sse_ok=true tools=5
 ```
 
-`mcp_router` in this Envoy build does not implement the legacy GET/SSE
-transport. The gateway is POST JSON-RPC only on this path. SSE needs a Go shim
-or a different data-plane component; it is not claimed.
+This is a real SSE transport check, not a mock.
 
 ## Not covered by this run
 
 - mTLS/client certificates;
-- SSE (observed 405);
+- `mcp_router`'s raw GET/SSE (405); the shim path is covered instead.
 - SSE long connections and zero-downtime LDS/CDS churn;
 - multi-instance HA, canary, K8s.
 

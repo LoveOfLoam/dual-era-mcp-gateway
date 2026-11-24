@@ -298,7 +298,7 @@ MVP 代码级完成：
 | C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz+ratelimit；mcp 在 internal；无 TLS |
 | C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[x]` T8 `-TLS` PASS，TLS1.3+ALPN h2，`h2check` 实际 HTTP/2 200 |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
-| C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[~]` T8 实测 legacy GET `/mcp` → 405；`mcp_router` 不支持 SSE，需 Go shim |
+| C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[x]` T8 `sse-shim` PASS；raw `mcp_router` GET 仍 405 |
 | C-08 | retry/outlier/circuit | P0 | C-06 | 故障注入 | `[~]` public cluster/route 配置；未运行故障注入 |
 | C-09 | body/header 限制 | P0 | C-03 | 413/431 | `[~]` body 只有 facade |
 | C-10 | Origin 校验 | P0 | C-03 | 非法 403 | `[x]` facade |
@@ -676,3 +676,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v10 | T8 加真实压测：10 workers/5s → 3,114 RPS，p95 4.80ms，0 error；记录为单机 Docker 证据，不是 500RPS/10min SLA |
 | 2026-11-25 | v11 | T8 chaos 实跑：停 crm 后 partial catalog 200、dead call 500、恢复；停 policy 后 403 fail-closed |
 | 2026-11-25 | v12 | T8 chaos 增加 Redis 停机：ratelimit fallback 后请求仍 200，验证 fail-open |
+| 2026-11-25 | v13 | 增加 `cmd/sse-shim`：public GET `/mcp` + `/mcp/message` 走 shim，T8 `ssecheck` PASS（HTTP/TLS）；raw mcp_router GET 仍 405 |
