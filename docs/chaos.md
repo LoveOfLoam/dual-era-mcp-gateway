@@ -1,5 +1,8 @@
 # Chaos / failure-injection matrix
 
+Actual T8 results are in [`chaos-report.md`](chaos-report.md): partial backend
+failure (200 partial catalog), recovery, and ext_authz fail-closed (403).
+
 This is a **test plan, not an executed report**. Docker/Envoy are unavailable in
 this environment, so none of the runtime rows below are claimed as passed.
 

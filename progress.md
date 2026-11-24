@@ -31,6 +31,7 @@
 - T8 now covers TLS 1.3 + ALPN h2 + actual HTTP/2, Redis-backed ratelimit (60×200/10×429, DBSIZE=1), and records legacy SSE GET 405.
 - T8 image uses `Dockerfile.prebuilt` because Docker-build-time Go module download is blocked.
 - Added T8 load run (`scripts/t8-load.ps1`): 3,114 RPS, p95 4.80ms, 0 errors over 5s/10 workers (single-host Docker evidence).
+- Added T8 chaos run (`scripts/t8-chaos.ps1`): stopping crm keeps partial catalog and returns 500 for the dead tool; recovery works; stopping policy makes Envoy fail closed with 403.
 
 ## Test log
 
