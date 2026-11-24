@@ -32,6 +32,8 @@ powershell -File scripts/load-local.ps1 -Concurrency 10 -Seconds 3
 | max | 27.7 ms |
 
 Durations in the JSON are nanoseconds; the table converts to milliseconds.
+`requests` counts attempts (23,467); 23,458 returned 200 and 9 were in-flight
+when the 3-second deadline fired, so they are not counted as errors.
 
 ## What this proves
 
