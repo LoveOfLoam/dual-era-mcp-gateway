@@ -76,6 +76,8 @@ try {
     if ($up) {
         cmd /c "docker compose -f `"$compose`" down -v >NUL 2>&1"
     }
-    Remove-Item $loadgen, $bodyFile, $outFile -Force -ErrorAction SilentlyContinue
+    Remove-Item $loadgen -Force -ErrorAction SilentlyContinue
+    if ($bodyFile) { Remove-Item $bodyFile -Force -ErrorAction SilentlyContinue }
+    if ($outFile) { Remove-Item $outFile -Force -ErrorAction SilentlyContinue }
 }
 exit 0

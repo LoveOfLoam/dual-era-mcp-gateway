@@ -100,4 +100,4 @@ services:
     ports:
       - "8080:8080"
       - "9901:9901"
-    depends_on: [gateway, envoy-legacy, policy]
+    depends_on: [gateway, gateway-b, envoy-legacy, policy, sse-shim]
