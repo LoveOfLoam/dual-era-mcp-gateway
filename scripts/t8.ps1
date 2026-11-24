@@ -25,6 +25,8 @@ function Build-T8Binaries {
         if ($LASTEXITCODE -ne 0) { throw "build legacy-mock failed" }
         go build -trimpath -o (Join-Path $bin "policy") ./cmd/policy
         if ($LASTEXITCODE -ne 0) { throw "build policy failed" }
+        go build -trimpath -o (Join-Path $bin "rest-mock") ./cmd/rest-mock
+        if ($LASTEXITCODE -ne 0) { throw "build rest-mock failed" }
     } finally {
         Pop-Location
         if ($oldGOOS) { $env:GOOS = $oldGOOS } else { Remove-Item Env:GOOS -ErrorAction SilentlyContinue }
@@ -147,11 +149,11 @@ try {
         $list = Invoke-JsonPost "$baseUrl/mcp" $listBody @{"Mcp-Session-Id" = $session}
         if ($list.Status -eq 200) {
             $names = @($list.Json.result.tools | ForEach-Object { $_.name })
-            if (($names -contains "weather__get_weather") -and ($names -contains "crm__get_customer")) { break }
+            if (($names -contains "weather__get_weather") -and ($names -contains "crm__get_customer") -and ($names -contains "rest__get_customer")) { break }
         }
         Start-Sleep -Seconds 1
     }
-    if (-not ($names -contains "weather__get_weather") -or -not ($names -contains "crm__get_customer")) {
+    if (-not ($names -contains "weather__get_weather") -or -not ($names -contains "crm__get_customer") -or -not ($names -contains "rest__get_customer")) {
         throw "legacy catalog missing expected tools: $($names -join ',')"
     }
 
@@ -172,6 +174,13 @@ try {
     }
     if ($limitedCalls -eq 0) {
         throw "ratelimit did not trigger (200=$okCalls, 429=$limitedCalls)"
+    }
+    $restCall = Invoke-JsonPost "$baseUrl/mcp" '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"rest__get_customer","arguments":{"customer_id":"42"}}}' @{
+        "Mcp-Session-Id" = $session
+        "Mcp-Name"       = "rest__get_customer"
+    }
+    if ($restCall.Status -ne 200 -or $restCall.Body -notmatch 'Ada Lovelace') {
+        throw "REST bridge call failed: status=$($restCall.Status) body=$($restCall.Body)"
     }
     $redisKeys = (& docker compose @composeArgs exec -T redis redis-cli DBSIZE 2>&1 | Out-String).Trim()
     if (-not $redisKeys -or [int]$redisKeys -lt 1) {

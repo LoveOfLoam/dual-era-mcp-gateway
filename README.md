@@ -146,8 +146,9 @@ Current status (2026-11-25):
 - `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
 - `scripts/t8.ps1`: **PASS** with `envoyproxy/envoy:v1.40.2` on Docker Desktop.
   See [`docs/t8-report.md`](docs/t8-report.md). HTTP and `-TLS` overlays both PASS;
-  TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`), and the
-  ratelimit path uses Redis (60×200 / 10×429, `DBSIZE=1`). SSE is not covered.
+  TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`), the REST
+  bridge is aggregated as `rest__*`, and ratelimit uses Redis
+  (60×200 / 10×429, `DBSIZE=1`). SSE is not covered.
 
 See [`docs/test-report.md`](docs/test-report.md) and [`docs/spec/acceptance-tests.md`](docs/spec/acceptance-tests.md).
 

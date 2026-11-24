@@ -43,8 +43,10 @@ powershell -File scripts/t8.ps1
 - This harness includes `ext_authz`, the Envoy `ratelimit` filter, and a Redis
   service (`cmd/policy -redis-addr`). 70 calls produce 60×200 / 10×429 with the
   demo RPM=60 policy, and `redis-cli DBSIZE` verifies the limiter key.
-- It does **not** include the REST bridge, SSE long connections, or 100-change
-  zero-downtime. A legacy SSE GET currently returns 405 from `mcp_router`; see
+- It includes the **REST bridge** (`envoy-rest` + `mcp_json_rest_bridge`) as
+  `rest__*` tools aggregated by `mcp_router`.
+- It does **not** include SSE long connections or 100-change zero-downtime. A
+  legacy SSE GET currently returns 405 from `mcp_router`; see
   `docs/t8-report.md`.
 - The image uses `Dockerfile.prebuilt`: `scripts/t8.ps1` cross-compiles Linux
   binaries first, avoiding Docker-build-time `go mod download` (network blocked).

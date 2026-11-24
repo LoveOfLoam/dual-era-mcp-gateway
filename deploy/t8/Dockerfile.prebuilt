@@ -6,6 +6,7 @@ RUN adduser -D -H -u 65532 nonroot
 COPY deploy/t8/bin/gateway /gateway
 COPY deploy/t8/bin/legacy-mock /legacy-mock
 COPY deploy/t8/bin/policy /policy
+COPY deploy/t8/bin/rest-mock /rest-mock
 COPY config/policy.example.json /config/policy.example.json
 USER nonroot:nonroot
 ENTRYPOINT ["/gateway"]

@@ -61,6 +61,8 @@ static_resources:
               mcp_cluster: {cluster: weather, path: /mcp}
             - name: crm
               mcp_cluster: {cluster: crm, path: /mcp}
+            - name: rest
+              mcp_cluster: {cluster: rest_bridge, path: /mcp}
     - name: weather
       type: STRICT_DNS
       dns_lookup_family: V4_ONLY
@@ -83,3 +85,14 @@ static_resources:
               - endpoint:
                   address:
                     socket_address: {address: crm, port_value: 9002}
+    - name: rest_bridge
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 1s
+      load_assignment:
+        cluster_name: rest_bridge
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: envoy-rest, port_value: 10001}

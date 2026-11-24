@@ -56,10 +56,14 @@ used for the actual HTTP/2 request.
 - public Envoy path split: `/mcp` vs `/modern/mcp`;
 - internal `mcp_router` + `mcp_multicluster`;
 - legacy `initialize` returns `Mcp-Session-Id`;
-- legacy `tools/list` contains `weather__get_weather` and `crm__get_customer`;
+- legacy `tools/list` contains `weather__get_weather`, `crm__get_customer`, and
+  `rest__get_customer` (REST bridge on an internal Envoy listener);
+- `rest__get_customer` call reaches the REST mock and returns `Ada Lovelace`;
 - modern `server/discover` returns 200;
 - modern `tools/list` contains both namespaced tools;
 - public Envoy `ext_authz` allows the demo key `test`;
+- `mcp_json_rest_bridge` on its own internal listener, aggregated by
+  `mcp_router` as `rest__*`;
 - Envoy `ratelimit` filter + Go ratelimit service + Redis Lua: 60 calls allowed,
   10 calls returned 429 in the 70-call burst (policy RPM=60); `redis-cli DBSIZE`
   showed the limiter key.
@@ -100,7 +104,6 @@ or a different data-plane component; it is not claimed.
 ## Not covered by this run
 
 - mTLS/client certificates;
-- REST bridge on the internal listener;
 - SSE (observed 405);
 - SSE long connections and zero-downtime LDS/CDS churn;
 - multi-instance HA, canary, K8s.

@@ -335,7 +335,7 @@ MVP 代码级完成：
 | E-04 | K8s manifest Provider | P1 | E-01 | ConfigMap/McpSource | `[x]` |
 | E-05 | Nacos Config Provider | P1 | E-01 | dataId/group/tenant | `[x]` |
 | E-06 | Native MCP client | P0 | C-02 | initialize/session/list/call | `[x]` |
-| E-07 | REST adapter | P0 | E-01 | path/query/body | `[~]` 无 OAuth/HMAC |
+| E-07 | REST adapter | P0 | E-01 | path/query/body | `[x]` Go adapter + T8 `mcp_json_rest_bridge`；OAuth/HMAC 见 E-08 |
 | E-08 | 复杂 REST | P2 | E-07 | OAuth/HMAC/multipart/长任务 | `[~]` OAuth2 client credentials + HMAC；multipart/长任务未做 |
 | E-09 | stdio bridge | P2 | C-02 | 进程池/重启 | `[~]` 单进程 JSON-RPC 桥 + HTTP handler；无进程池/自动重启 |
 | E-10 | Registry 前缀/排序/冲突 | P0 | E-06/E-07 | 单源也带前缀 | `[x]` |
@@ -672,3 +672,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v6 | T8 `-TLS` PASS：TLS1.3 + ALPN h2，HTTP/TLS 两种模式都覆盖 initialize/list/ratelimit |
 | 2026-11-25 | v7 | 新增 `cmd/h2check`：T8 TLS 下实际 HTTP/2 initialize 返回 200 HTTP/2.0；C-05 完成 |
 | 2026-11-25 | v8 | T8 加 Redis：policy `-redis-addr`，70 次 60×200/10×429，`DBSIZE=1`；镜像改 `Dockerfile.prebuilt` 规避 Docker 构建期 Go 模块网络阻塞；记录 SSE GET 405 |
+| 2026-11-25 | v9 | T8 加 `mcp_json_rest_bridge` 内部 listener：`rest__get_customer` 聚合与调用 PASS；REST bridge 不再列为未覆盖 |

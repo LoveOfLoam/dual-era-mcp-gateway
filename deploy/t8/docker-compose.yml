@@ -20,6 +20,14 @@ services:
     command: ["-addr", ":9002", "-name", "crm", "-tools", "get_customer"]
     expose: ["9002"]
 
+  rest:
+    build:
+      context: ../..
+      dockerfile: deploy/t8/Dockerfile.prebuilt
+    entrypoint: ["/rest-mock"]
+    command: ["-addr", ":9200"]
+    expose: ["9200"]
+
   redis:
     image: redis:7-alpine
     expose: ["6379"]
@@ -46,12 +54,21 @@ services:
     expose: ["8080"]
     depends_on: [weather, crm]
 
+  envoy-rest:
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.40.2}
+    command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+    volumes:
+      - ./envoy-rest.yaml:/etc/envoy/envoy.yaml:ro
+    expose: ["10001"]
+    depends_on: [rest]
+
   envoy-legacy:
     image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.40.2}
     command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
     volumes:
       - ./envoy-legacy.yaml:/etc/envoy/envoy.yaml:ro
     expose: ["10001"]
+    depends_on: [weather, crm, envoy-rest]
 
   envoy-public:
     image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.40.2}

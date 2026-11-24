@@ -11,7 +11,8 @@
       ],
       "allow": [
         {"source": "weather", "tools": ["*"]},
-        {"source": "crm", "tools": ["get_customer"]}
+        {"source": "crm", "tools": ["get_customer"]},
+        {"source": "rest", "tools": ["*"]}
       ]
     }
   ],
