@@ -7,7 +7,7 @@ services:
   weather:
     build:
       context: ../..
-      dockerfile: deploy/t8/Dockerfile
+      dockerfile: deploy/t8/Dockerfile.prebuilt
     entrypoint: ["/legacy-mock"]
     command: ["-addr", ":9001", "-name", "weather", "-tools", "get_weather,list_cities"]
     expose: ["9001"]
@@ -15,23 +15,28 @@ services:
   crm:
     build:
       context: ../..
-      dockerfile: deploy/t8/Dockerfile
+      dockerfile: deploy/t8/Dockerfile.prebuilt
     entrypoint: ["/legacy-mock"]
     command: ["-addr", ":9002", "-name", "crm", "-tools", "get_customer"]
     expose: ["9002"]
 
+  redis:
+    image: redis:7-alpine
+    expose: ["6379"]
+
   policy:
     build:
       context: ../..
-      dockerfile: deploy/t8/Dockerfile
+      dockerfile: deploy/t8/Dockerfile.prebuilt
     entrypoint: ["/policy"]
-    command: ["-config", "/config/policy.example.json", "-authz-addr", ":19001", "-ratelimit-addr", ":19002"]
+    command: ["-config", "/config/policy.example.json", "-authz-addr", ":19001", "-ratelimit-addr", ":19002", "-redis-addr", "redis:6379"]
     expose: ["19001", "19002"]
+    depends_on: [redis]
 
   gateway:
     build:
       context: ../..
-      dockerfile: deploy/t8/Dockerfile
+      dockerfile: deploy/t8/Dockerfile.prebuilt
     entrypoint: ["/gateway"]
     command:
       - "-addr"

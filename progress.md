@@ -28,6 +28,8 @@
 - Added `internal/modernclient` (2026-07-28) and `cmd/gateway -modern`; trace propagation to legacy upstream.
 - Added ADR-001..007, runbook, demo, k6 script, Helm/T8 docs.
 - T8 real Docker/Envoy run PASS (Envoy 1.40.2): fixed Alpine runtime image, PowerShell JSON body, startup retry, teardown exit code; report in `docs/t8-report.md`.
+- T8 now covers TLS 1.3 + ALPN h2 + actual HTTP/2, Redis-backed ratelimit (60×200/10×429, DBSIZE=1), and records legacy SSE GET 405.
+- T8 image uses `Dockerfile.prebuilt` because Docker-build-time Go module download is blocked.
 
 ## Test log
 

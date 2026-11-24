@@ -315,7 +315,7 @@ MVP 代码级完成：
 | D-02 | tenant 只从凭证 | P0 | D-01 | 伪造 `x-tenant-id` 无效 | `[x]` |
 | D-03 | 工具 allowlist | P0 | D-01 | 越权 403 | `[x]` |
 | D-04 | 内存 RPM 限流 | P0 | D-01 | 超限 429/layer | `[x]` |
-| D-05 | Redis Lua 限流 | P0 | D-04 | 原子、跨副本 | `[x]` `RedisLimiter` + miniredis 测试；无真实 Redis 压测 |
+| D-05 | Redis Lua 限流 | P0 | D-04 | 原子、跨副本 | `[x]` miniredis 单测 + T8 真实 Redis（60×200/10×429） |
 | D-06 | ext_authz gRPC | P0 | D-01 | Envoy 可调用 | `[x]` 服务 + 单测 + T8 实际调用 |
 | D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[x]` 服务 + 单测 + T8 实际 429；未接 Redis |
 | D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[x]` T8 实际 429（60×200 / 10×429） |
@@ -671,3 +671,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v5 | T8 增加 Envoy ratelimit filter：70 次调用 60×200 / 10×429；修 ext_authz 删除 `x-tenant-id` 导致 descriptor 为空；补 catalog fanout 重试 |
 | 2026-11-25 | v6 | T8 `-TLS` PASS：TLS1.3 + ALPN h2，HTTP/TLS 两种模式都覆盖 initialize/list/ratelimit |
 | 2026-11-25 | v7 | 新增 `cmd/h2check`：T8 TLS 下实际 HTTP/2 initialize 返回 200 HTTP/2.0；C-05 完成 |
+| 2026-11-25 | v8 | T8 加 Redis：policy `-redis-addr`，70 次 60×200/10×429，`DBSIZE=1`；镜像改 `Dockerfile.prebuilt` 规避 Docker 构建期 Go 模块网络阻塞；记录 SSE GET 405 |

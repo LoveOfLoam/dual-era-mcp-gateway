@@ -31,7 +31,7 @@ Observed output (abridged):
 ==> docker compose up --build
 ==> legacy /mcp initialize + tools/list
 ==> legacy tools/call + ratelimit 429
-==> ratelimit observed: 200=60 429=10
+==> ratelimit observed: 200=60 429=10 redis_keys=1
 ==> modern /modern/mcp discover + tools/list
 T8 PASS (HTTP): public path split + internal mcp_router + modern facade + ratelimit
 t8_exit=0
@@ -60,8 +60,9 @@ used for the actual HTTP/2 request.
 - modern `server/discover` returns 200;
 - modern `tools/list` contains both namespaced tools;
 - public Envoy `ext_authz` allows the demo key `test`;
-- Envoy `ratelimit` filter + Go ratelimit service: 60 calls allowed, 10 calls
-  returned 429 in the 70-call burst (policy RPM=60).
+- Envoy `ratelimit` filter + Go ratelimit service + Redis Lua: 60 calls allowed,
+  10 calls returned 429 in the 70-call burst (policy RPM=60); `redis-cli DBSIZE`
+  showed the limiter key.
 - TLS overlay: same initialize/list/ratelimit checks over HTTPS; TLSv1.3 + ALPN h2
   negotiated; actual HTTP/2 `initialize` returns `status=200 proto=HTTP/2.0`.
 
@@ -99,7 +100,6 @@ or a different data-plane component; it is not claimed.
 ## Not covered by this run
 
 - mTLS/client certificates;
-- Redis-backed ratelimit (the in-memory policy is exercised);
 - REST bridge on the internal listener;
 - SSE (observed 405);
 - SSE long connections and zero-downtime LDS/CDS churn;

@@ -40,11 +40,14 @@ powershell -File scripts/t8.ps1
   $env:ENVOY_IMAGE="envoyproxy/envoy@sha256:..."
   ```
 
-- This harness includes `ext_authz` and the Envoy `ratelimit` filter (70 calls
-  produce 60×200 / 10×429 with the demo RPM=60 policy). It does **not** include
-  Redis-backed limits, REST bridge, SSE long connections, or 100-change
+- This harness includes `ext_authz`, the Envoy `ratelimit` filter, and a Redis
+  service (`cmd/policy -redis-addr`). 70 calls produce 60×200 / 10×429 with the
+  demo RPM=60 policy, and `redis-cli DBSIZE` verifies the limiter key.
+- It does **not** include the REST bridge, SSE long connections, or 100-change
   zero-downtime. A legacy SSE GET currently returns 405 from `mcp_router`; see
   `docs/t8-report.md`.
+- The image uses `Dockerfile.prebuilt`: `scripts/t8.ps1` cross-compiles Linux
+  binaries first, avoiding Docker-build-time `go mod download` (network blocked).
 - The **TLS overlay** (`docker-compose.tls.yml` + `envoy-public-tls.yaml` +
   `scripts/gen-dev-cert.ps1`) is exercised: `scripts/t8.ps1 -TLS` PASSes the
   same initialize/list/ratelimit checks over HTTPS, with TLSv1.3 + ALPN h2 and

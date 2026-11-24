@@ -7,6 +7,33 @@ $root = Split-Path -Parent $PSScriptRoot
 $compose = Join-Path $root "deploy\t8\docker-compose.yml"
 $composeArgs = @("-f", $compose)
 $baseUrl = "http://127.0.0.1:8080"
+
+function Build-T8Binaries {
+    $bin = Join-Path $root "deploy\t8\bin"
+    New-Item -ItemType Directory -Force -Path $bin | Out-Null
+    $oldGOOS = $env:GOOS
+    $oldGOARCH = $env:GOARCH
+    $oldCGO = $env:CGO_ENABLED
+    $env:GOOS = "linux"
+    $env:GOARCH = "amd64"
+    $env:CGO_ENABLED = "0"
+    Push-Location $root
+    try {
+        go build -trimpath -o (Join-Path $bin "gateway") ./cmd/gateway
+        if ($LASTEXITCODE -ne 0) { throw "build gateway failed" }
+        go build -trimpath -o (Join-Path $bin "legacy-mock") ./cmd/legacy-mock
+        if ($LASTEXITCODE -ne 0) { throw "build legacy-mock failed" }
+        go build -trimpath -o (Join-Path $bin "policy") ./cmd/policy
+        if ($LASTEXITCODE -ne 0) { throw "build policy failed" }
+    } finally {
+        Pop-Location
+        if ($oldGOOS) { $env:GOOS = $oldGOOS } else { Remove-Item Env:GOOS -ErrorAction SilentlyContinue }
+        if ($oldGOARCH) { $env:GOARCH = $oldGOARCH } else { Remove-Item Env:GOARCH -ErrorAction SilentlyContinue }
+        if ($oldCGO) { $env:CGO_ENABLED = $oldCGO } else { Remove-Item Env:CGO_ENABLED -ErrorAction SilentlyContinue }
+    }
+}
+
+Build-T8Binaries
 if ($TLS) {
     & (Join-Path $PSScriptRoot "gen-dev-cert.ps1") | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "dev certificate generation failed" }
@@ -129,6 +156,9 @@ try {
     }
 
     Write-Host "==> legacy tools/call + ratelimit 429"
+    # Let the policy/ratelimit gRPC service and Redis connection settle; while it
+    # is down the filter is fail-open and those calls are not counted.
+    Start-Sleep -Seconds 3
     $callBody = '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"weather__get_weather","arguments":{"q":"Paris"}}}'
     $okCalls = 0
     $limitedCalls = 0
@@ -143,7 +173,11 @@ try {
     if ($limitedCalls -eq 0) {
         throw "ratelimit did not trigger (200=$okCalls, 429=$limitedCalls)"
     }
-    Write-Host "==> ratelimit observed: 200=$okCalls 429=$limitedCalls"
+    $redisKeys = (& docker compose @composeArgs exec -T redis redis-cli DBSIZE 2>&1 | Out-String).Trim()
+    if (-not $redisKeys -or [int]$redisKeys -lt 1) {
+        throw "Redis limiter did not write keys (DBSIZE=$redisKeys)"
+    }
+    Write-Host "==> ratelimit observed: 200=$okCalls 429=$limitedCalls redis_keys=$redisKeys"
 
     Write-Host "==> modern /modern/mcp discover + tools/list"
     $meta = '"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}'

@@ -146,8 +146,8 @@ Current status (2026-11-25):
 - `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
 - `scripts/t8.ps1`: **PASS** with `envoyproxy/envoy:v1.40.2` on Docker Desktop.
   See [`docs/t8-report.md`](docs/t8-report.md). HTTP and `-TLS` overlays both PASS;
-  TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`). SSE/Redis
-  are not covered.
+  TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`), and the
+  ratelimit path uses Redis (60×200 / 10×429, `DBSIZE=1`). SSE is not covered.
 
 See [`docs/test-report.md`](docs/test-report.md) and [`docs/spec/acceptance-tests.md`](docs/spec/acceptance-tests.md).
 
@@ -236,13 +236,13 @@ Implemented:
 
 Not implemented / not verified:
 
-- T8 coverage of SSE/Redis and an actual HTTP/2 request (TLSv1.3 + ALPN h2 is PASS);
+- T8 coverage of SSE (legacy GET returns 405; TLS, HTTP/2, and Redis ratelimit are PASS);
 - single-endpoint B2;
 - full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;
 - TLS/mTLS runtime validation (T8 TLS passes; mTLS not tested), SSE (T8 `mcp_router` returns 405), zero-downtime LDS;
 - live Kubernetes informer / controller / CRDs;
-- Redis production deployment validation (the Redis Lua limiter has miniredis tests); JWT;
+- Redis production HA/rotation validation (T8 uses a single Redis container); JWT;
 - complex REST adapter multipart/long-running (OAuth2/HMAC are implemented);
 - real 500 RPS / k6 / chaos reports;
 - OAuth/OIDC, canary, multi-region.
