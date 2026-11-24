@@ -1,0 +1,13 @@
+# Overlay for TLS. Generate certs first:
+#   powershell -File scripts/gen-dev-cert.ps1
+# Run:
+#   docker compose -f deploy/t8/docker-compose.yml -f deploy/t8/docker-compose.tls.yml up
+services:
+  envoy-public:
+    command: ["-c", "/etc/envoy/envoy-public-tls.yaml", "--log-level", "info"]
+    ports:
+      - "8443:8443"
+      - "9901:9901"
+    volumes:
+      - ./envoy-public-tls.yaml:/etc/envoy/envoy-public-tls.yaml:ro
+      - ./certs:/etc/envoy/certs:ro

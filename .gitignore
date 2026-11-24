@@ -12,6 +12,9 @@ coverage.html
 /test-results/
 spike/results/
 
+# T8 dev TLS certs (never commit)
+deploy/t8/certs/
+
 # local
 .env
 .env.*

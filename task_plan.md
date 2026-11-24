@@ -227,7 +227,7 @@ MVP 代码级完成：
 | controlplane admin | 18080 | HTTP | `[x]` |
 | controlplane xDS | 18000 | gRPC/ADS | `[x]` CDS |
 | legacy mock | 9001/9002 | HTTP | `[x]` |
-| public Envoy | 8443 | HTTPS/HTTP2 | `[ ]` |
+| public Envoy | 8443 | HTTPS/HTTP2 | `[~]` TLS overlay 配置；未运行 |
 | internal Envoy | 10001 | HTTP | `[~]` 配置草案 |
 | ext_authz | 19001 | gRPC | `[x]` 服务 |
 | ratelimit | 19002 | gRPC | `[x]` 服务 |
@@ -296,7 +296,7 @@ MVP 代码级完成：
 | C-02 | Legacy `/mcp` | P0 | C-01 | initialize/list/call | `[x]` 本地；Envoy `[ ]` |
 | C-03 | Modern `/modern/mcp` | P0 | C-01 | discover/list/call | `[x]` |
 | C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz；无 TLS/ratelimit filter |
-| C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[ ]` |
+| C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[~]` TLS overlay + dev cert 脚本；未运行 |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
 | C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[ ]` |
 | C-08 | retry/outlier/circuit | P0 | C-06 | 故障注入 | `[ ]` |
