@@ -14,6 +14,8 @@ services:
       XDS_MODERN_PORT: "8080"
       XDS_LEGACY_HOST: envoy-legacy
       XDS_LEGACY_PORT: "10001"
+      XDS_SSE_HOST: sse-shim
+      XDS_SSE_PORT: "18081"
       XDS_PUBLIC_PORT: "8443"
     expose: ["18000", "18080"]
     ports:

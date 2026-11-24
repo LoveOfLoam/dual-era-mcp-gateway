@@ -63,10 +63,10 @@ metadata host 拒绝；`allowedHosts` 白名单；不允许用户随意指定 UR
 “有 JWT 代码”说成“生产级 OIDC”。
 
 **Q10：这个项目最大的限制？**
-SSE 跨 churn 未做；K8s CRD informer/controller、
+K8s CRD informer/controller、
 HA/leader election、canary、Redis HA 未做。10 分钟单机 T8 已跑（~835 RPS、p99 3.74ms、
 0 error），但仍是单 Docker 主机、单副本、`tools/list` 流量，不是生产 SLA。
-T8 的 ext_authz/Redis ratelimit/SSE/mTLS/xDS LDS-CDS-RDS churn + NACK 是真运行证据。
+T8 的 ext_authz/Redis ratelimit/SSE/mTLS/xDS LDS-CDS-RDS churn + 长连接 SSE + NACK 是真运行证据。
 
 ## 不要写进简历的表述
 

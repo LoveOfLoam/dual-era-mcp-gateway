@@ -27,6 +27,8 @@ try {
     if (-not $oldCGO) { Remove-Item Env:CGO_ENABLED -ErrorAction SilentlyContinue }
     $loadgen = Join-Path $env:TEMP ("loadgen-xds-" + $PID + ".exe")
     go build -o $loadgen ./cmd/loadgen
+    $sseCheck = Join-Path $env:TEMP ("ssecheck-xds-" + $PID + ".exe")
+    go build -o $sseCheck ./cmd/ssecheck
 } finally { Pop-Location }
 
 $up = $false
@@ -57,6 +59,9 @@ try {
     if (-not $ok) { throw "xDS public listener did not become ready: $code" }
     $sid = (Get-Content $hdr | Where-Object { $_ -match '^(?i)mcp-session-id:' } | Select-Object -First 1) -replace '^(?i)mcp-session-id:\s*', ''
     Write-Host "xDS initialize: 200 session=$($sid.Length) chars"
+    $sse = & $sseCheck -url "http://127.0.0.1:8443/mcp" -token test 2>&1
+    Write-Host "xDS SSE: $($sse -join ' ')"
+    if ($LASTEXITCODE -ne 0) { throw "xDS SSE transport failed" }
 
     $before = (Invoke-RestMethod "http://127.0.0.1:18080/metrics" -UseBasicParsing) | Select-String 'mcp_controlplane_xds_ack_total (\d+)'
     $ackBefore = if ($before.Matches.Count -gt 0) { [int]$before.Matches[0].Groups[1].Value } else { 0 }
@@ -72,6 +77,11 @@ try {
             -concurrency 10 -duration "3s" -out $out 2>&1
     } -ArgumentList $loadgen, $bodyFile, $outFile
 
+    $sseHold = Start-Job -ScriptBlock {
+        param($exe)
+        & $exe -url "http://127.0.0.1:8443/mcp" -token test -hold 3s 2>&1
+    } -ArgumentList $sseCheck
+
     $base = Get-Content (Join-Path $root "deploy\t8\xds-config.json") -Raw | ConvertFrom-Json
     $a = $base.PSObject.Copy()
     $a | Add-Member -NotePropertyName listenerHeader -NotePropertyValue "v1" -Force
@@ -83,7 +93,20 @@ try {
         $json = if ($i % 2 -eq 0) { $jsonA } else { $jsonB }
         $resp = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:18080/api/v1/apply" -ContentType "application/json" -Body $json
         if (-not $resp.version) { throw "apply $i failed" }
+        if ($i % 10 -eq 0) {
+            $sse = & $sseCheck -url "http://127.0.0.1:8443/mcp" -token test 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "SSE failed after apply $i" }
+        }
     }
+    Wait-Job $sseHold -Timeout 20 | Out-Null
+    $sseHoldOut = Receive-Job $sseHold
+    $sseHoldExit = $sseHold.State
+    Remove-Job $sseHold -Force -ErrorAction SilentlyContinue
+    Write-Host "xDS long-lived SSE: $($sseHoldOut -join ' ')"
+    if ($sseHoldExit -ne "Completed" -or ($sseHoldOut -join ' ') -notmatch 'sse_ok=true') {
+        throw "long-lived SSE failed during churn"
+    }
+
     Wait-Job $job -Timeout 20 | Out-Null
     $loadOut = Receive-Job $job
     Remove-Job $job -Force -ErrorAction SilentlyContinue
@@ -119,6 +142,6 @@ try {
         $ErrorActionPreference = "Continue"
         docker compose -f $compose -f $xdsCompose down -v *> $null
     }
-    Remove-Item $loadgen -Force -ErrorAction SilentlyContinue
+    Remove-Item $loadgen, $sseCheck -Force -ErrorAction SilentlyContinue
 }
 exit 0

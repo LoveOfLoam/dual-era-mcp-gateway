@@ -20,6 +20,7 @@ func main() {
 	base := flag.String("url", "http://127.0.0.1:8080/mcp", "SSE endpoint")
 	token := flag.String("token", "test", "bearer token")
 	insecure := flag.Bool("insecure", false, "skip TLS verification")
+	hold := flag.Duration("hold", 0, "hold the SSE connection open before posting")
 	flag.Parse()
 
 	tr := &http.Transport{}
@@ -27,7 +28,7 @@ func main() {
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 	client := &http.Client{Transport: tr}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, *base, nil)
@@ -48,6 +49,9 @@ func main() {
 	event, endpoint := readEvent(br)
 	if event != "endpoint" {
 		fail(fmt.Errorf("expected endpoint event, got %q %q", event, endpoint))
+	}
+	if *hold > 0 {
+		time.Sleep(*hold)
 	}
 	baseURL, _ := url.Parse(*base)
 	ref, _ := url.Parse(endpoint)

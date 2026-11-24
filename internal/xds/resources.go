@@ -28,6 +28,8 @@ var (
 	modernFacadePort   = uint32(envInt("XDS_MODERN_PORT", 8080))
 	legacyInternalHost = envString("XDS_LEGACY_HOST", "127.0.0.1")
 	legacyInternalPort = uint32(envInt("XDS_LEGACY_PORT", 10001))
+	sseShimHost        = envString("XDS_SSE_HOST", "sse-shim")
+	sseShimPort        = uint32(envInt("XDS_SSE_PORT", 18081))
 )
 
 func envString(key, fallback string) string {
@@ -60,6 +62,7 @@ func buildResources(cfg controlplane.Config) (map[resource.Type][]types.Resource
 	clusters = append(clusters,
 		staticCluster("modern_facade", modernFacadeHost, modernFacadePort),
 		staticCluster("legacy_internal", legacyInternalHost, legacyInternalPort),
+		staticCluster("sse_shim", sseShimHost, sseShimPort),
 	)
 
 	routes, err := publicRouteConfig()
@@ -86,6 +89,22 @@ func publicRouteConfig() (*route.RouteConfiguration, error) {
 			}},
 		}
 	}
+	routeGet := func(path, clusterName string) *route.Route {
+		return &route.Route{
+			Match: &route.RouteMatch{
+				PathSpecifier: &route.RouteMatch_Path{Path: path},
+				Headers: []*route.HeaderMatcher{{
+					Name: ":method",
+					HeaderMatchSpecifier: &route.HeaderMatcher_ExactMatch{
+						ExactMatch: "GET",
+					},
+				}},
+			},
+			Action: &route.Route_Route{Route: &route.RouteAction{
+				ClusterSpecifier: &route.RouteAction_Cluster{Cluster: clusterName},
+			}},
+		}
+	}
 	return &route.RouteConfiguration{
 		Name: "public",
 		VirtualHosts: []*route.VirtualHost{{
@@ -93,6 +112,8 @@ func publicRouteConfig() (*route.RouteConfiguration, error) {
 			Domains: []string{"*"},
 			Routes: []*route.Route{
 				routeFor("/modern/mcp", "modern_facade"),
+				routeGet("/mcp", "sse_shim"),
+				routeFor("/mcp/message", "sse_shim"),
 				routeFor("/mcp", "legacy_internal"),
 			},
 		}},

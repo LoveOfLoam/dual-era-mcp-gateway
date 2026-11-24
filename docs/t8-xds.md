@@ -1,7 +1,8 @@
 # T8 xDS churn run — 2026-11-25
 
 **Result: PASS** — 100 LDS/CDS/RDS applies while live traffic continued with 0
-transport errors and 111 ACKs, followed by a NACK injection and recovery.
+transport errors, a long-lived SSE connection survived, 175 ACKs, followed by a
+NACK injection and recovery.
 
 ## Topology
 
@@ -27,16 +28,20 @@ powershell -File scripts/t8-xds.ps1 -Changes 100
 
 ```text
 xDS initialize: 200 session=84 chars
-xDS load: requests=12740 errors=0 rps=4246.6 p50=2.15ms p95=3.69ms p99=4.34ms
-xDS ACKs before=3 after=111 changes=100
+xDS load: requests=11711 errors=0 rps=3903.7 p50=2.25ms p95=4.18ms p99=5.30ms
+xDS ACKs before=3 after=175 changes=100
+xDS SSE: sse_ok=true tools=5 (checked at every 10th apply)
+xDS long-lived SSE: sse_ok=true tools=5 (held 3s across the churn)
 T8 XDS PASS: CDS/RDS updates applied with live load
 ```
 
 - 100 alternating configs change `listenerHeader`, which changes the HCM
   `stat_prefix` and therefore the **LDS listener resource** (CDS/RDS are also
   re-snapshotted);
-- Envoy ACKed the updates (ACK 3 → 111);
-- 12,740 live requests, 0 errors, ~4.2k RPS on this host.
+- Envoy ACKed the updates (ACK 3 → 175);
+- 11,711 live requests, 0 errors, ~3.9k RPS on this host;
+- SSE handshake + tools/list still works at every 10th apply;
+- one SSE connection held for 3s across the churn and still completed tools/list.
 
 ## Bug found
 
@@ -51,7 +56,7 @@ The T8 control plane enables `-test-invalid`, which exposes
 is `envoy.filters.network.definitely_invalid`.
 
 ```text
-xDS NACKs before=0 after=3054
+xDS NACKs before=0 after=3143
 xDS recovery initialize: status=200
 ```
 
@@ -69,7 +74,7 @@ rejecting the bad snapshot in this short window, not request failures.
 
 ## Not covered
 
-- SSE during churn;
+- multi-node xDS / leader election (this is one control plane and one Envoy);
 - multi-node xDS / leader election;
 - the policy chain on the xDS listener.
 
