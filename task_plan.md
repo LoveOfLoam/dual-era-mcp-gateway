@@ -359,7 +359,7 @@ MVP 代码级完成：
 | F-10 | docker-compose | P1 | C-05 | 本地一键 | `[x]` T8 compose；本机 Docker 不可用 |
 | F-11 | CI | P0 | G-01..G-08 | build/vet/test/race/lint/integration | `[~]` test/vet/build/race；无 lint/集成 |
 | F-12 | T8 harness | P0 | F-09/F-10 | Envoy 拓扑测试 | `[~]` harness 已写；运行阻塞 |
-| F-13 | 依赖/镜像扫描 | P1 | F-11 | govulncheck/trivy | `[ ]` |
+| F-13 | 依赖/镜像扫描 | P1 | F-11 | govulncheck/trivy | `[~]` `scripts/scan.ps1`；本机未安装工具，SKIP |
 
 ### WS-G 测试与文档
 
@@ -406,6 +406,7 @@ MVP 代码级完成：
 | dry-run | config diff API | `controlplane.DiffConfigs` + `/api/v1/dry-run` |
 | stdio bridge | 子进程 JSON-RPC + `/mcp` handler | `internal/stdio` helper-process tests |
 | REST auth | OAuth2 client credentials + HMAC | `internal/restadapter` 测试 |
+| scan/resume | 依赖扫描脚本 + 简历/面试问答 | `scripts/scan.ps1`, `docs/resume.md` |
 | dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 
 仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。
@@ -597,7 +598,7 @@ powershell -File scripts/envoy-validate.ps1
 | 压测/混沌/安全报告 | `[~]` 微基准 + k6 脚本 + SSRF/安全测试；无真实压测/chaos |
 | ADR-001..007 | `[x]` 7 篇 |
 | 5 分钟 demo | `[~]` `docs/demo.md`；未录视频 |
-| 简历 bullet/面试问答 | `[ ]` |
+| 简历 bullet/面试问答 | `[x]` `docs/resume.md` |
 
 ---
 

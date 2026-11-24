@@ -95,6 +95,7 @@ powershell -File scripts/test.ps1
 3. **Docker integration** is not executed because the sandbox cannot reach the Docker daemon. `deploy/t8/docker-compose.yml` and `scripts/t8.ps1` are ready; the script correctly reports SKIP here.
 4. **xDS** now serves public CDS/RDS/LDS plus ACK/NACK callbacks. The internal `mcp_router` listener is still static; TLS/SSE/zero-downtime are not validated.
 5. **K8s/Nacos** are implemented as manifest/Config-Service providers, not live informer/service-discovery clients. Helm is a skeleton; no cluster/CRD validation. Complex REST multipart/binary/long-running remains Phase 2; OAuth2 client credentials and HMAC are implemented.
+6. **Dependency/image scanning** is available via `scripts/scan.ps1`, but govulncheck/trivy are not installed here (SKIP).
 
 ## Verdict
 

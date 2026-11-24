@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: dual-era-gateway
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway:8080"]
+  - job_name: envoy-public
+    metrics_path: /stats/prometheus
+    static_configs:
+      - targets: ["envoy-public:9901"]
+  - job_name: envoy-legacy
+    metrics_path: /stats/prometheus
+    static_configs:
+      - targets: ["envoy-legacy:9901"]

@@ -185,7 +185,9 @@ docs/benchmarks/    # microbenchmark reports
 docs/adr/           # ADR-001..007
 docs/runbook.md     # operations runbook
 docs/demo.md        # 5-minute demo
+docs/resume.md      # resume bullets + interview Q&A
 scripts/k6/         # load-test script (not executed here)
+scripts/scan.ps1    # govulncheck/trivy when installed
 ```
 
 ## Scope and non-goals
