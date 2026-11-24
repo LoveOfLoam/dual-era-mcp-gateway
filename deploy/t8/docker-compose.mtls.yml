@@ -1,0 +1,12 @@
+# Overlay for public mTLS (client certificate required).
+#   powershell -File scripts/gen-mtls-certs.ps1
+#   powershell -File scripts/t8-mtls.ps1
+services:
+  envoy-public:
+    command: ["-c", "/etc/envoy/envoy-public-mtls.yaml", "--log-level", "info"]
+    ports:
+      - "8444:8444"
+      - "9901:9901"
+    volumes:
+      - ./envoy-public-mtls.yaml:/etc/envoy/envoy-public-mtls.yaml:ro
+      - ./certs:/etc/envoy/certs:ro

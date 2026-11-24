@@ -145,6 +145,7 @@ Current status (2026-11-25):
 - `go vet` / `go build`: green; CI race run: **green** on the previous batch.
 - `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
 - `scripts/t8.ps1`: **PASS** with `envoyproxy/envoy:v1.40.2` on Docker Desktop.
+  `scripts/t8-mtls.ps1`: **PASS** (client certificate required).
   See [`docs/t8-report.md`](docs/t8-report.md). HTTP and `-TLS` overlays both PASS;
   TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`), the REST
   bridge is aggregated as `rest__*`, and ratelimit uses Redis
@@ -212,6 +213,7 @@ scripts/scan.ps1    # govulncheck/trivy when installed
 scripts/load-local.ps1 # local Go-mode load run
 scripts/t8-load.ps1  # real Envoy T8 load run
 scripts/t8-chaos.ps1 # T8 partial backend / ext_authz failure injection
+scripts/t8-mtls.ps1  # T8 client-certificate enforcement
 ```
 
 ## Scope and non-goals
@@ -247,7 +249,7 @@ Not implemented / not verified:
 - single-endpoint B2;
 - full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;
-- TLS/mTLS runtime validation (T8 TLS passes; mTLS not tested), zero-downtime LDS;
+- zero-downtime LDS/CDS and HA/leader election (T8 TLS + mTLS pass);
 - live Kubernetes informer / controller / CRDs;
 - Redis production HA/rotation validation (T8 uses a single Redis container); JWT;
 - complex REST adapter multipart/long-running (OAuth2/HMAC are implemented);

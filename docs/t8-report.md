@@ -107,10 +107,11 @@ This is a real SSE transport check, not a mock.
 
 ## Not covered by this run
 
-- mTLS/client certificates;
 - `mcp_router`'s raw GET/SSE (405); the shim path is covered instead.
 - SSE long connections and zero-downtime LDS/CDS churn;
 - multi-instance HA, canary, K8s.
 
 `mcp_router`/`mcp_multicluster` remain WIP Envoy filters; the image is pinned
 to `v1.40.2` for reproducibility. Use a digest for production.
+
+Client-certificate enforcement is in [`t8-mtls.md`](t8-mtls.md).

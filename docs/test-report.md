@@ -51,6 +51,7 @@ powershell -File scripts/test.ps1
 | `scripts/test.ps1` | PASS (Envoy validate SKIP) |
 | `scripts/t8-load.ps1` | PASS: 3,114 RPS, p95 4.80ms, 0 errors (5s) |
 | `scripts/t8-chaos.ps1` | PASS: partial backend 200, dead call 500, recovery, policy-down 403, Redis-down 200 fallback |
+| `scripts/t8-mtls.ps1` | PASS: client cert 200; no cert rejected (`tls: certificate required`) |
 
 ## Coverage (selected)
 

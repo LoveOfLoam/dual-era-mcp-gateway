@@ -282,7 +282,7 @@ MVP 代码级完成：
 | B-09 | 管理 API | P0 | B-04 | status/config/revisions/apply/rollback/envoy | `[~]` 无鉴权/dataplanes/tools |
 | B-10 | CRD + controller | P0 | B-01 | `kubectl apply` → snapshot | `[~]` CRD schema + ConfigMap 目录 controller；CRD informer 未做 |
 | B-11 | Admission webhook | P0 | B-10 | 非法 CRD 拒绝 | `[~]` handler/单测/manifests；无集群/cert-manager 验证 |
-| B-12 | 2 副本 + leader election + mTLS | P0 | B-07 | kill 1 副本不断流 | `[ ]` |
+| B-12 | 2 副本 + leader election + mTLS | P0 | B-07 | kill 1 副本不断流 | `[~]` T8 mTLS PASS；HA/leader election 未做 |
 | B-13 | Tool Registry 服务 | P0 | B-01 | `/api/v1/tools`、stale 标记 | `[~]` 代码内有 catalog |
 | B-14 | Canary | P1 | B-12 | node metadata 分 channel | `[ ]` |
 | B-15 | 配置审计 | P0 | B-09 | 谁/何时/旧新 version | `[~]` actor/reason/old-new/audit API；actor 身份未鉴权 |
@@ -296,7 +296,7 @@ MVP 代码级完成：
 | C-02 | Legacy `/mcp` | P0 | C-01 | initialize/list/call | `[x]` T8 initialize/list PASS |
 | C-03 | Modern `/modern/mcp` | P0 | C-01 | discover/list/call | `[x]` T8 discover/list PASS |
 | C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz+ratelimit；mcp 在 internal；无 TLS |
-| C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[x]` T8 `-TLS` PASS，TLS1.3+ALPN h2，`h2check` 实际 HTTP/2 200 |
+| C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[x]` T8 `-TLS` PASS，TLS1.3+ALPN h2，`h2check` 实际 HTTP/2 200；mTLS 见 B-12 |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
 | C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[x]` T8 `sse-shim` PASS；raw `mcp_router` GET 仍 405 |
 | C-08 | retry/outlier/circuit | P0 | C-06 | 故障注入 | `[~]` public cluster/route 配置；未运行故障注入 |
@@ -677,3 +677,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v11 | T8 chaos 实跑：停 crm 后 partial catalog 200、dead call 500、恢复；停 policy 后 403 fail-closed |
 | 2026-11-25 | v12 | T8 chaos 增加 Redis 停机：ratelimit fallback 后请求仍 200，验证 fail-open |
 | 2026-11-25 | v13 | 增加 `cmd/sse-shim`：public GET `/mcp` + `/mcp/message` 走 shim，T8 `ssecheck` PASS（HTTP/TLS）；raw mcp_router GET 仍 405 |
+| 2026-11-25 | v14 | T8 mTLS：`cmd/mtlscheck` 带客户端证书 200，无证书被 `tls: certificate required` 拒绝；B-12 仍缺 HA/leader |
