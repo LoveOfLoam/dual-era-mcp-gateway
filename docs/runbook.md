@@ -31,6 +31,8 @@ go run ./cmd/controlplane -addr :18080 -xds-addr :18000
 
 ```powershell
 go run ./cmd/policy -config config/policy.example.json -authz-addr :19001 -ratelimit-addr :19002
+# optional distributed limiter:
+go run ./cmd/policy -config config/policy.example.json -redis-addr 127.0.0.1:6379
 ```
 
 The gRPC services are consumed by Envoy in the T8/Helm configs. In local Go

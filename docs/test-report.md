@@ -54,7 +54,7 @@ powershell -File scripts/test.ps1
 | `internal/audit` | 90.9% |
 | `internal/envoy` | 94.4% |
 | `internal/extauthz` | 93.5% |
-| `internal/ratelimit` | 92.9% |
+| `internal/ratelimit` | 82.4% (memory + Redis Lua/miniredis) |
 | `internal/registry` | 88.0% |
 | `internal/restadapter` | 87.7% |
 | `internal/edge` | 83.3% |

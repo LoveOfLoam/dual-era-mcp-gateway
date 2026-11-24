@@ -82,7 +82,7 @@ Status rules:
 | FR-POL-02 | JWT | 无 | TODO |
 | FR-POL-03 | tenant 只从凭证 | `Authenticate` 忽略 `x-tenant-id` + test | DONE |
 | FR-POL-04 | allowlist | `Authorize` + tests | DONE |
-| FR-POL-05 | RPM + burst/Redis | 进程内固定窗口；无 Redis/跨副本 | PARTIAL |
+| FR-POL-05 | RPM + burst/Redis | 进程内 + Redis Lua（miniredis 测试）；未做真实 Redis 压测 | PARTIAL |
 | FR-POL-06 | 429 body/layer/Retry-After | layer 有；无 Retry-After/Envoy local reply | PARTIAL |
 | FR-POL-07 | 审计 | 无 | TODO |
 | FR-POL-08 | 失败模式 | auth 库内 fail-closed；无 Redis 降级 | PARTIAL |

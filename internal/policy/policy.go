@@ -149,6 +149,17 @@ func (e *Engine) Authorize(tenant, tool string) error {
 	return ErrForbidden
 }
 
+// LimitFor returns the matching rate limit and layer for a tenant/tool.
+func (e *Engine) LimitFor(tenant, tool string) (RateLimit, string, bool) {
+	source, original, ok := splitTool(tool)
+	if !ok {
+		return RateLimit{}, "", false
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.matchLimit(tenant, source, original)
+}
+
 // Allow checks and consumes one rate-limit slot. It returns the layer name for
 // the 429 response.
 func (e *Engine) Allow(tenant, tool string) (bool, string) {

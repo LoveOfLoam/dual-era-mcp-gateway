@@ -1,5 +1,5 @@
-// Package ratelimit implements Envoy's RateLimitService gRPC service using the
-// in-process policy engine. Redis-backed limiting is a separate Phase 2 item.
+// Package ratelimit implements Envoy's RateLimitService gRPC service with a
+// memory limiter and an optional Redis Lua fixed-window limiter.
 package ratelimit
 
 import (
@@ -16,13 +16,18 @@ import (
 // Server implements ratelimitv3.RateLimitServiceServer.
 type Server struct {
 	ratelimitv3.UnimplementedRateLimitServiceServer
-	policy *policy.Engine
-	audit  *audit.Logger
+	limiter Limiter
+	audit   *audit.Logger
 }
 
-// New creates a rate-limit server.
+// New creates a rate-limit server with the in-process limiter.
 func New(engine *policy.Engine) *Server {
-	return &Server{policy: engine}
+	return &Server{limiter: NewMemoryLimiter(engine)}
+}
+
+// NewWithLimiter creates a rate-limit server with a custom backend.
+func NewWithLimiter(l Limiter) *Server {
+	return &Server{limiter: l}
 }
 
 // WithAudit enables JSONL audit events.
@@ -33,7 +38,7 @@ func (s *Server) WithAudit(l *audit.Logger) *Server {
 
 // ShouldRateLimit checks all descriptors; one over-limit descriptor rejects the
 // request. Descriptors are expected to carry `tenant` and `tool`.
-func (s *Server) ShouldRateLimit(_ context.Context, req *ratelimitv3.RateLimitRequest) (*ratelimitv3.RateLimitResponse, error) {
+func (s *Server) ShouldRateLimit(ctx context.Context, req *ratelimitv3.RateLimitRequest) (*ratelimitv3.RateLimitResponse, error) {
 	for _, d := range req.GetDescriptors() {
 		var tenant, tool string
 		for _, e := range d.GetEntries() {
@@ -47,7 +52,7 @@ func (s *Server) ShouldRateLimit(_ context.Context, req *ratelimitv3.RateLimitRe
 		if tenant == "" || tool == "" {
 			continue
 		}
-		allowed, layer := s.policy.Allow(tenant, tool)
+		allowed, layer := s.limiter.Allow(ctx, tenant, tool)
 		if !allowed {
 			if s.audit != nil {
 				s.audit.Emit(audit.Event{

@@ -20,7 +20,7 @@ And **two config layers**:
 Policy and operations:
 
 - ext_authz gRPC (`cmd/policy`) for API key → tenant / allowlist.
-- ratelimit gRPC with in-process fixed-window limits (Redis is Phase 2).
+- ratelimit gRPC with in-process fixed-window limits and optional Redis Lua fixed-window (`-redis-addr`).
 - `/metrics` Prometheus text + `X-Trace-Id` propagation.
 - T8 Docker/Envoy harness and Helm chart skeleton; both are environment-dependent.
 
@@ -196,7 +196,7 @@ Implemented:
 - static/OpenAPI/K8s-manifest/Nacos providers;
 - generic REST adapter (path/query/JSON body);
 - tool prefix/sort/collision;
-- API key/tenant/allowlist/rate limit;
+- API key/tenant/allowlist/rate limit (memory + optional Redis Lua);
 - ext_authz + ratelimit gRPC services;
 - config validation/version/rollback/ACK model;
 - public LDS/RDS plus CDS and ACK/NACK callbacks;
@@ -217,7 +217,7 @@ Not implemented / not verified:
 - internal `mcp_router` LDS resources;
 - TLS/mTLS, SSE long-connection, zero-downtime LDS;
 - live Kubernetes informer / controller / CRDs;
-- Redis-backed ratelimit, JWT, audit;
+- Redis production deployment validation (the Redis Lua limiter has miniredis tests); JWT;
 - complex REST adapter (OAuth/HMAC/multipart/long-running);
 - real 500 RPS / k6 / chaos reports;
 - OAuth/OIDC, canary, multi-region.

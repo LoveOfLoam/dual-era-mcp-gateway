@@ -315,14 +315,14 @@ MVP 代码级完成：
 | D-02 | tenant 只从凭证 | P0 | D-01 | 伪造 `x-tenant-id` 无效 | `[x]` |
 | D-03 | 工具 allowlist | P0 | D-01 | 越权 403 | `[x]` |
 | D-04 | 内存 RPM 限流 | P0 | D-01 | 超限 429/layer | `[x]` |
-| D-05 | Redis Lua 限流 | P0 | D-04 | 原子、跨副本 | `[ ]` |
+| D-05 | Redis Lua 限流 | P0 | D-04 | 原子、跨副本 | `[x]` `RedisLimiter` + miniredis 测试；无真实 Redis 压测 |
 | D-06 | ext_authz gRPC | P0 | D-01 | Envoy 可调用 | `[x]` 服务 + 单测；T8 未跑 |
 | D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[x]` 服务 + 单测；未接 Redis |
 | D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[~]` ratelimit 服务有 body/Retry-After；Envoy local reply 未验证 |
 | D-09 | JWT/JWKS | P0 | D-06 | 过期/错 audience 401 | `[ ]` |
 | D-10 | 审计 JSONL | P0 | D-06 | 无 payload/密钥 | `[ ]` |
 | D-11 | 策略指标 | P0 | D-06 | decisions/degraded | `[ ]` |
-| D-12 | 失败模式 | P0 | D-06 | auth fail-closed；Redis fail-open | `[~]` 仅库内 |
+| D-12 | 失败模式 | P0 | D-06 | auth fail-closed；Redis fail-open | `[x]` ext_authz deny + Redis fallback 测试 |
 | D-13 | 接入 `cmd/gateway` | P0 | D-01 | 本地网关真正启用策略 | `[x]` `-policy` 已接线；legacy 路径仍由 Envoy/ext_authz 负责 |
 
 ### WS-E 工具源 / Provider

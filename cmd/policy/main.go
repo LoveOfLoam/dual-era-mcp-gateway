@@ -28,6 +28,9 @@ func main() {
 	configPath := flag.String("config", "config/policy.example.json", "policy JSON file")
 	authzAddr := flag.String("authz-addr", ":19001", "ext_authz gRPC address")
 	rlAddr := flag.String("ratelimit-addr", ":19002", "ratelimit gRPC address")
+	redisAddr := flag.String("redis-addr", "", "optional Redis address for distributed rate limiting")
+	redisPassword := flag.String("redis-password", "", "Redis password")
+	redisDB := flag.Int("redis-db", 0, "Redis DB")
 	flag.Parse()
 
 	engine, err := policy.LoadFile(*configPath)
@@ -50,8 +53,16 @@ func main() {
 	authv3.RegisterAuthorizationServer(authzSrv, extauthz.New(engine).WithAudit(auditLog))
 	healthpb.RegisterHealthServer(authzSrv, health.NewServer())
 
+	var rlServer *ratelimit.Server
+	if *redisAddr != "" {
+		rl := ratelimit.NewRedisLimiter(engine, *redisAddr, *redisPassword, *redisDB)
+		defer rl.Close()
+		rlServer = ratelimit.NewWithLimiter(rl)
+	} else {
+		rlServer = ratelimit.New(engine)
+	}
 	rlSrv := grpc.NewServer()
-	ratelimitv3.RegisterRateLimitServiceServer(rlSrv, ratelimit.New(engine).WithAudit(auditLog))
+	ratelimitv3.RegisterRateLimitServiceServer(rlSrv, rlServer.WithAudit(auditLog))
 	healthpb.RegisterHealthServer(rlSrv, health.NewServer())
 
 	go func() {
