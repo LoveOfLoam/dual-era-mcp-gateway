@@ -1,7 +1,16 @@
+param([switch]$TLS)
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 $compose = Join-Path $root "deploy\t8\docker-compose.yml"
+$composeArgs = @("-f", $compose)
+$baseUrl = "http://127.0.0.1:8080"
+if ($TLS) {
+    & (Join-Path $PSScriptRoot "gen-dev-cert.ps1") | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "dev certificate generation failed" }
+    $composeArgs += @("-f", (Join-Path $root "deploy\t8\docker-compose.tls.yml"))
+    $baseUrl = "https://127.0.0.1:8443"
+}
 
 $docker = Get-Command docker -ErrorAction SilentlyContinue
 if (-not $docker) {
@@ -27,7 +36,7 @@ function Invoke-JsonPost($Uri, $Body, $Headers = @{}) {
     try {
         [IO.File]::WriteAllText($bodyFile, $Body, [Text.UTF8Encoding]::new($false))
         $curlArgs = @(
-            "-sS", "--max-time", "15",
+            "-sS", "-k", "--max-time", "15",
             "-D", $headerFile, "-o", $outFile, "-w", "%{http_code}",
             "-X", "POST", $Uri,
             "-H", "Content-Type: application/json",
@@ -55,7 +64,7 @@ function Invoke-JsonPost($Uri, $Body, $Headers = @{}) {
 $up = $false
 try {
     Write-Host "==> docker compose up --build"
-    docker compose -f $compose up -d --build
+    docker compose @composeArgs up -d --build
     if ($LASTEXITCODE -ne 0) { throw "compose up failed" }
     $up = $true
 
@@ -73,7 +82,7 @@ try {
     $init = $null
     for ($i = 0; $i -lt 30; $i++) {
         try {
-            $init = Invoke-JsonPost "http://127.0.0.1:8080/mcp" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"t8","version":"0"}}}'
+            $init = Invoke-JsonPost "$baseUrl/mcp" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"t8","version":"0"}}}'
             if ($init.Status -eq 200) { break }
             Start-Sleep -Seconds 1
         } catch {
@@ -87,7 +96,7 @@ try {
     $listBody = '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
     $names = @()
     for ($i = 0; $i -lt 30; $i++) {
-        $list = Invoke-JsonPost "http://127.0.0.1:8080/mcp" $listBody @{"Mcp-Session-Id" = $session}
+        $list = Invoke-JsonPost "$baseUrl/mcp" $listBody @{"Mcp-Session-Id" = $session}
         if ($list.Status -eq 200) {
             $names = @($list.Json.result.tools | ForEach-Object { $_.name })
             if (($names -contains "weather__get_weather") -and ($names -contains "crm__get_customer")) { break }
@@ -103,7 +112,7 @@ try {
     $okCalls = 0
     $limitedCalls = 0
     for ($i = 0; $i -lt 70; $i++) {
-        $call = Invoke-JsonPost "http://127.0.0.1:8080/mcp" $callBody @{
+        $call = Invoke-JsonPost "$baseUrl/mcp" $callBody @{
             "Mcp-Session-Id" = $session
             "Mcp-Name"       = "weather__get_weather"
         }
@@ -120,7 +129,7 @@ try {
     $discover = $null
     for ($i = 0; $i -lt 30; $i++) {
         try {
-            $discover = Invoke-JsonPost "http://127.0.0.1:8080/modern/mcp" ('{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{' + $meta + '}}') @{
+            $discover = Invoke-JsonPost "$baseUrl/modern/mcp" ('{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{' + $meta + '}}') @{
                 "MCP-Protocol-Version" = "2026-07-28"
                 "Mcp-Method"           = "server/discover"
             }
@@ -130,13 +139,13 @@ try {
     }
     if (-not $discover) { throw "modern discover failed after retries" }
     if ($discover.Status -ne 200) { throw "modern discover status $($discover.Status)" }
-    $modernList = Invoke-JsonPost "http://127.0.0.1:8080/modern/mcp" ('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{' + $meta + '}}') @{
+    $modernList = Invoke-JsonPost "$baseUrl/modern/mcp" ('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{' + $meta + '}}') @{
         "MCP-Protocol-Version" = "2026-07-28"
         "Mcp-Method"           = "tools/list"
     }
     $modernNames = @()
     for ($i = 0; $i -lt 30; $i++) {
-        $modernList = Invoke-JsonPost "http://127.0.0.1:8080/modern/mcp" ('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{' + $meta + '}}') @{
+        $modernList = Invoke-JsonPost "$baseUrl/modern/mcp" ('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{' + $meta + '}}') @{
             "MCP-Protocol-Version" = "2026-07-28"
             "Mcp-Method"           = "tools/list"
         }
@@ -150,15 +159,16 @@ try {
         throw "modern catalog missing expected tools: $($modernNames -join ',')"
     }
 
-    Write-Host "T8 PASS: public path split + internal mcp_router + modern facade"
+    $mode = if ($TLS) { "TLS" } else { "HTTP" }
+    Write-Host "T8 PASS ($mode): public path split + internal mcp_router + modern facade + ratelimit"
 } catch {
     Write-Host "T8 FAIL: $($_.Exception.Message)"
-    if ($up) { docker compose -f $compose logs --no-color | Select-Object -Last 120 }
+    if ($up) { docker compose @composeArgs logs --no-color | Select-Object -Last 120 }
     exit 1
 } finally {
     if ($up) {
         # Teardown progress is written to stderr; do not turn it into a script failure.
         $ErrorActionPreference = "Continue"
-        docker compose -f $compose down -v *> $null
+        docker compose @composeArgs down -v *> $null
     }
 }

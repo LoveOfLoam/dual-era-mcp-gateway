@@ -296,7 +296,7 @@ MVP 代码级完成：
 | C-02 | Legacy `/mcp` | P0 | C-01 | initialize/list/call | `[x]` T8 initialize/list PASS |
 | C-03 | Modern `/modern/mcp` | P0 | C-01 | discover/list/call | `[x]` T8 discover/list PASS |
 | C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz+ratelimit；mcp 在 internal；无 TLS |
-| C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[~]` TLS overlay + dev cert 脚本；未运行 |
+| C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[~]` T8 `-TLS` PASS，TLS1.3+ALPN h2；Windows curl 无 `--http2`，未发实际 h2 请求 |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
 | C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[ ]` |
 | C-08 | retry/outlier/circuit | P0 | C-06 | 故障注入 | `[~]` public cluster/route 配置；未运行故障注入 |
@@ -495,7 +495,7 @@ MVP 代码级完成：
 | T5 | policy | `internal/policy`, facade policy tests | `[x]` |
 | T6 | control plane + ADS CDS/RDS/LDS + ACK/NACK | `internal/controlplane`, `internal/xds`, `extauthz`, `ratelimit` | `[x]` |
 | T7 | resilience/concurrency | `internal/facade/resilience_test.go` | `[x]` |
-| T8 | Envoy runtime | `scripts/t8.ps1` | `[x]` Envoy 1.40.2 PASS |
+| T8 | Envoy runtime | `scripts/t8.ps1` | `[x]` HTTP+TLS PASS（Envoy 1.40.2） |
 
 ### 6.3 命令
 
@@ -669,3 +669,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v3 | P2 增量：ext_authz/ratelimit gRPC、gateway 策略接线、public CDS/RDS/LDS、ACK/NACK callback、`/metrics`/trace、T8/Helm harness、REST SSRF allowlist、facade 微基准；T8 运行仍阻塞 |
 | 2026-11-25 | v4 | T8 实跑 PASS（Envoy 1.40.2，Docker Desktop）：修 gcr.io 基础镜像、PowerShell JSON body、启动竞态与 teardown 退出码；补 `docs/t8-report.md` |
 | 2026-11-25 | v5 | T8 增加 Envoy ratelimit filter：70 次调用 60×200 / 10×429；修 ext_authz 删除 `x-tenant-id` 导致 descriptor 为空；补 catalog fanout 重试 |
+| 2026-11-25 | v6 | T8 `-TLS` PASS：TLS1.3 + ALPN h2，HTTP/TLS 两种模式都覆盖 initialize/list/ratelimit；未发实际 h2 请求 |

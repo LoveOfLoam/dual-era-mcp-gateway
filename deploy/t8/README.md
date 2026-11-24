@@ -44,9 +44,9 @@ powershell -File scripts/t8.ps1
   produce 60×200 / 10×429 with the demo RPM=60 policy). It does **not** include
   Redis-backed limits, REST bridge, SSE long connections, TLS runtime, or
   100-change zero-downtime. Those are separate gates.
-- There is an **optional TLS overlay** (`docker-compose.tls.yml` +
-  `envoy-public-tls.yaml`) and `scripts/gen-dev-cert.ps1`. It is a config
-  artifact; this environment has neither Docker nor Envoy to validate it.
+- The **TLS overlay** (`docker-compose.tls.yml` + `envoy-public-tls.yaml` +
+  `scripts/gen-dev-cert.ps1`) is exercised: `scripts/t8.ps1 -TLS` PASSes the
+  same initialize/list/ratelimit checks over HTTPS, with TLSv1.3 + ALPN h2.
 - Public routes/clusters include conservative retry (`reset,connect-failure`),
   circuit-breaker and outlier-detection settings. They are not fault-injected
   or validated here; retrying mutating `tools/call` on 5xx is deliberately not
@@ -54,8 +54,7 @@ powershell -File scripts/t8.ps1
 ## Optional TLS overlay
 
 ```powershell
-powershell -File scripts/gen-dev-cert.ps1
-docker compose -f deploy/t8/docker-compose.yml -f deploy/t8/docker-compose.tls.yml up
+powershell -File scripts/t8.ps1 -TLS
 ```
 
 Then send the same authenticated `server/discover` or `tools/list` requests as

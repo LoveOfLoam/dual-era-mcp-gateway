@@ -21,6 +21,8 @@ client :8080
 ```powershell
 docker compose -f deploy/t8/docker-compose.yml down -v
 powershell -File scripts/t8.ps1
+# TLS overlay:
+powershell -File scripts/t8.ps1 -TLS
 ```
 
 Observed output (abridged):
@@ -31,9 +33,17 @@ Observed output (abridged):
 ==> legacy tools/call + ratelimit 429
 ==> ratelimit observed: 200=60 429=10
 ==> modern /modern/mcp discover + tools/list
-T8 PASS: public path split + internal mcp_router + modern facade
+T8 PASS (HTTP): public path split + internal mcp_router + modern facade + ratelimit
 t8_exit=0
+
+# TLS run:
+T8 PASS (TLS): public path split + internal mcp_router + modern facade + ratelimit
+tls_exit=0
 ```
+
+TLS also negotiated `TLSv1.3` + `ALPN protocol: h2` (checked with
+`openssl s_client`). Windows `curl.exe` lacks `--http2`, so the end-to-end TLS
+request itself was HTTP/1.1; an actual HTTP/2 request is not claimed.
 
 ## Checks covered
 
@@ -46,6 +56,8 @@ t8_exit=0
 - public Envoy `ext_authz` allows the demo key `test`;
 - Envoy `ratelimit` filter + Go ratelimit service: 60 calls allowed, 10 calls
   returned 429 in the 70-call burst (policy RPM=60).
+- TLS overlay: same initialize/list/ratelimit checks over HTTPS; TLSv1.3 + ALPN h2
+  negotiated.
 
 ## Issues fixed during the run
 
@@ -67,7 +79,8 @@ t8_exit=0
 
 ## Not covered by this run
 
-- TLS/mTLS (TLS overlay exists but is not exercised);
+- actual HTTP/2 **request** (curl on this Windows host lacks `--http2`; ALPN h2 is verified);
+- mTLS/client certificates;
 - Redis-backed ratelimit (the in-memory policy is exercised);
 - REST bridge on the internal listener;
 - SSE long connections and zero-downtime LDS/CDS churn;
