@@ -15,7 +15,9 @@
 - 实现 **REST → MCP adapter**：path/query/JSON body、OAuth2 client credentials、
   HMAC 签名、metadata host SSRF 拒绝、allowedHosts。
 - 建立 **TDD/spec-driven** 证据链：T0–T8 边界、race CI、覆盖率、WBS/Gate/FR/AC
-  traceability；T8 用 Docker/Envoy harness，环境不可用时明确 SKIP 而非伪造 PASS。
+  traceability；T8 用真实 Docker/Envoy harness：path split、ext_authz、Redis ratelimit、
+  REST bridge、legacy SSE shim、TLS/HTTP2、mTLS、100 次 xDS CDS/RDS churn + ACK、
+  load 与 chaos 都有运行证据；环境不可用时明确 SKIP 而非伪造 PASS。
 - 可观测：`/metrics`、结构化日志、`X-Trace-Id`/`traceparent` 传播、Grafana/Prometheus
   starter 资产。
 
@@ -46,25 +48,29 @@ public listener 的 CDS/RDS/LDS + ACK/NACK；internal `mcp_router` 仍静态。�
 metadata host 拒绝；`allowedHosts` 白名单；不允许用户随意指定 URL；下游凭据
 不默认透传（T8 route `request_headers_to_remove` + ext_authz 移除）。
 
-**Q7：T8 为什么没跑？**
-本机 Docker daemon 不可访问、无 Envoy binary；`scripts/t8.ps1` 明确 SKIP。
-harness 已提交，环境可用时可直接跑；不把 T0–T7 当成 Envoy 证据。
+**Q7：T8 跑了吗？**
+跑了。Docker Desktop + Envoy 1.40.2 上 `scripts/t8.ps1` / `-TLS` / `t8-mtls.ps1` /
+`t8-xds.ps1` / `t8-load.ps1` / `t8-chaos.ps1` 都 PASS；raw `mcp_router` GET/SSE
+仍是 405，公开 SSE 由 `cmd/sse-shim` 承担。T8 是运行证据，不是 SLA。
 
 **Q8：stdio bridge 怎么做的？**
 子进程 stdin/stdout newline-delimited JSON-RPC；ID→pending channel 路由；HTTP
 `initialize`/`tools/list`/`tools/call` 映射；单进程，无进程池/自动重启（Phase 2）。
 
-**Q9：JWT 为什么只做 HS256？**
-MVP 先验证 issuer/audience/exp/nbf/tenant claim；RS256/JWKS 需要密钥轮换和缓存，
-放 Phase 2，避免把“有 JWT 代码”说成“生产级 OIDC”。
+**Q9：JWT 做了什么？**
+验证 issuer/audience/exp/nbf/tenant claim；HS256 用共享密钥，RS256 支持 JWKS
+（5 分钟缓存）。没有做生产级 OIDC 的密钥轮换、吊销和全量 claim 策略，避免把
+“有 JWT 代码”说成“生产级 OIDC”。
 
 **Q10：这个项目最大的限制？**
-真实 Envoy T8、TLS/SSE/zero-downtime、500 RPS/chaos、K8s CRD/controller 都未完成；
-项目证据是 Go 层测试 + 可复现 harness，不是生产 SLA。
+LDS listener replacement / NACK 注入 / SSE 跨 churn 未做；K8s CRD informer/controller、
+HA/leader election、canary、Redis HA 未做。10 分钟单机 T8 已跑（~835 RPS、p99 3.74ms、
+0 error），但仍是单 Docker 主机、单副本、`tools/list` 流量，不是生产 SLA。
+T8 的 ext_authz/Redis ratelimit/SSE/mTLS/xDS CDS-RDS churn 是真运行证据。
 
 ## 不要写进简历的表述
 
 - “支撑 500 RPS / p99 < 10ms”——没有真实压测数据。
 - “生产级 K8s controller/CRD”——只有 Helm 骨架和文件 Provider。
 - “完整 MCP 2026-07-28 全特性”——只覆盖 discover/list/call/_meta/headers 的核心路径。
-- “T8 已通过”——本环境是 SKIP。
+- “T8 等于生产可用”——T8 是单机 Docker harness，不是 HA/SLA；raw `mcp_router` SSE 仍 405。

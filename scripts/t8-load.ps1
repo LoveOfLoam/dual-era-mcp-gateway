@@ -68,8 +68,9 @@ try {
     }
 } finally {
     if ($up) {
-        $ErrorActionPreference = "Continue"
-        docker compose -f $compose down -v *> $null
+        # Native compose teardown writes progress to stderr; keep it out of the
+        # PowerShell error stream so the harness exits with the load result.
+        cmd /c "docker compose -f `"$compose`" down -v >NUL 2>&1"
     }
 }
-exit 0
+[Environment]::Exit(0)

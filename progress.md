@@ -34,6 +34,7 @@
 - Added T8 chaos run (`scripts/t8-chaos.ps1`): stopping crm keeps partial catalog and returns 500 for the dead tool; recovery works; stopping policy makes Envoy fail closed with 403; stopping Redis makes ratelimit fall back and still returns 200.
 - Added T8 xDS churn (`scripts/t8-xds.ps1`): 100 CDS/RDS applies under live load, 0 errors, 250 ACKs; fixed missing HCM `RouteConfigName`.
 - Added T8 mTLS (`scripts/t8-mtls.ps1`): client cert 200, no cert rejected.
+- Ran 10-minute T8 load: 500,710 requests, 835 RPS, p99 3.74ms, 0 errors (single host, `tools/list`).
 
 ## Test log
 

@@ -376,7 +376,7 @@ MVP 代码级完成：
 | G-09 | T8 Envoy runtime | P0 | F-12 | 真实拓扑 | `[x]` PASS |
 | G-10 | AC-01..AC-30 | P0 | T0..T8 | 全部通过或有明确 skip | `[~]` 子集 |
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
-| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` T8 5s/10 并发 3.1k RPS，p95 4.8ms，0 error；无 500RPS/10min/SSE |
+| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` T8 5s 3.1k RPS；10min 835 RPS，p99 3.74ms，0 error；未做长连接 SSE/k6 |
 | G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` T8 实测 backend 部分失败/恢复、ext_authz fail-closed、Redis 停机 fail-open；无 NACK/SSE/HA |
 | G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` 401/403/429/Origin/SSRF/body；无 413/431 Envoy 实测 |
 | G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[x]` `docs/demo.md`；未录视频 |
@@ -679,3 +679,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v13 | 增加 `cmd/sse-shim`：public GET `/mcp` + `/mcp/message` 走 shim，T8 `ssecheck` PASS（HTTP/TLS）；raw mcp_router GET 仍 405 |
 | 2026-11-25 | v14 | T8 mTLS：`cmd/mtlscheck` 带客户端证书 200，无证书被 `tls: certificate required` 拒绝；B-12 仍缺 HA/leader |
 | 2026-11-25 | v15 | T8 xDS：修复 HCM `RouteConfigName`；100 次 CDS/RDS 变更 + live load 12,580 req/0 error，ACK 250 |
+| 2026-11-25 | v16 | T8 10 分钟压测：500,710 req，835 RPS，p99 3.74ms，0 error；单机 Docker，不是 HA SLA |
