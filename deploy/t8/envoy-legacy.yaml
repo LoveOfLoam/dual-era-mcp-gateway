@@ -30,6 +30,7 @@ static_resources:
                           status: "%RESPONSE_CODE%"
                           duration_ms: "%DURATION%"
                           trace_id: "%REQ(X-TRACE-ID)%"
+                          mcp_dynamic_metadata: "%DYNAMIC_METADATA(envoy.filters.http.mcp)%"
                 route_config:
                   name: legacy_route
                   virtual_hosts:

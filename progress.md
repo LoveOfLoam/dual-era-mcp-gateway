@@ -27,6 +27,7 @@
 - Added REST adapter SSRF host checks/allowlist; facade microbenchmarks and `docs/benchmarks/2026-11-25.md`.
 - Added `internal/modernclient` (2026-07-28) and `cmd/gateway -modern`; trace propagation to legacy upstream.
 - Added ADR-001..007, runbook, demo, k6 script, Helm/T8 docs.
+- T8 real Docker/Envoy run PASS (Envoy 1.40.2): fixed Alpine runtime image, PowerShell JSON body, startup retry, teardown exit code; report in `docs/t8-report.md`.
 
 ## Test log
 

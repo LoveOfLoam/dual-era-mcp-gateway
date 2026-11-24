@@ -1,4 +1,4 @@
-# Test Report — 2026-11-24
+# Test Report — 2026-11-25
 
 ## Environment
 
@@ -7,8 +7,8 @@
 | OS | Windows 11 |
 | Go | go1.26.4 windows/amd64 |
 | C compiler | not installed (gcc/clang absent) |
-| Envoy | not installed |
-| Docker | daemon not reachable from the sandbox |
+| Envoy | not installed as a binary; T8 runs via Docker |
+| Docker | Docker Desktop 29.7.2; named-pipe access requires full sandbox permission |
 | Git | 2.48.1 |
 
 ## Commands
@@ -89,20 +89,21 @@ powershell -File scripts/test.ps1
 | T5 | `internal/policy`, `internal/facade/policy_test.go` |
 | T6 | `internal/controlplane`, `internal/extauthz`, `internal/ratelimit`, `internal/xds` ADS tests |
 | T7 | `internal/facade/resilience_test.go` |
-| T8 | **SKIP** — no Envoy binary; `scripts/envoy-validate.ps1` reports SKIP |
+| T8 | **PASS** — `scripts/t8.ps1` with `envoyproxy/envoy:v1.40.2`; see `docs/t8-report.md` |
 
 ## Skipped / limitations
 
 1. **`go test -race`** requires CGO and a C compiler. This Windows host has neither.
    - CI should run `CGO_ENABLED=1 go test -race ./...` on Linux.
-2. **Envoy runtime T8** requires an Envoy binary or Docker.
-   - `deploy/envoy/bootstrap.yaml` is available for `envoy --mode validate`.
-   - Generated full topology is served by `cmd/controlplane` at `/api/v1/envoy`.
-3. **Docker integration** is not executed because the sandbox cannot reach the Docker daemon. `deploy/t8/docker-compose.yml` and `scripts/t8.ps1` are ready; the script correctly reports SKIP here.
+2. **Envoy binary validation** is not run locally (`envoy` binary absent); T8 uses the Docker image instead.
+   - `deploy/envoy/bootstrap.yaml` is available for `envoy --mode validate` elsewhere.
+3. **T8 is executed** with Docker Desktop + Envoy 1.40.2; result is PASS for path split,
+   internal `mcp_router`, and modern facade. TLS/SSE/ratelimit/Redis are not part of
+   that run; see `docs/t8-report.md`.
 4. **xDS** now serves public CDS/RDS/LDS plus ACK/NACK callbacks. The internal `mcp_router` listener is still static; TLS/SSE/zero-downtime are not validated.
 5. **K8s/Nacos** are implemented as manifest/Config-Service providers, not live informer/service-discovery clients. Helm is a skeleton; no cluster/CRD validation. Complex REST multipart/binary/long-running remains Phase 2; OAuth2 client credentials and HMAC are implemented.
 6. **Dependency/image scanning** is available via `scripts/scan.ps1`, but govulncheck/trivy are not installed here (SKIP).
 
 ## Verdict
 
-T0–T7 pass under `go test ./...` and `go vet ./...`; `internal/xds` passes ADS CDS/RDS/LDS and ACK/NACK tests. T8 is documented and has a runnable harness, but remains unexecuted here. The remaining environment gaps are explicitly recorded rather than hidden.
+T0–T7 pass under `go test ./...` and `go vet ./...`; `internal/xds` passes ADS CDS/RDS/LDS and ACK/NACK tests. T8 passes against the real Docker/Envoy topology (Envoy 1.40.2) for the base path split, `mcp_router`, ext_authz, and modern facade. TLS/SSE/ratelimit/Redis coverage remains separate.

@@ -19,6 +19,7 @@ deploy/t8/certs/
 .env
 .env.*
 *.log
+t8-debug.log
 .DS_Store
 Thumbs.db
 

@@ -9,7 +9,10 @@ RUN CGO_ENABLED=0 go build -trimpath -o /out/gateway ./cmd/gateway \
  && CGO_ENABLED=0 go build -trimpath -o /out/policy ./cmd/policy \
  && CGO_ENABLED=0 go build -trimpath -o /out/controlplane ./cmd/controlplane
 
-FROM gcr.io/distroless/static-debian12:nonroot
+# Alpine is used instead of gcr.io/distroless because gcr.io is unreachable in
+# this environment. The binaries are CGO-disabled static binaries.
+FROM alpine:3.20
+RUN adduser -D -H -u 65532 nonroot
 COPY --from=build /out/gateway /gateway
 COPY --from=build /out/legacy-mock /legacy-mock
 COPY --from=build /out/policy /policy

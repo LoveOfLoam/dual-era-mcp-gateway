@@ -20,17 +20,35 @@ try {
 }
 
 function Invoke-JsonPost($Uri, $Body, $Headers = @{}) {
-    $all = @{
-        "Content-Type"  = "application/json"
-        "Accept"        = "application/json"
-        "Authorization" = "Bearer test"
-    }
-    foreach ($k in $Headers.Keys) { $all[$k] = $Headers[$k] }
-    $resp = Invoke-WebRequest -Uri $Uri -Method Post -Body $Body -Headers $all -UseBasicParsing
-    return @{
-        Status  = [int]$resp.StatusCode
-        Headers = $resp.Headers
-        Json    = ($resp.Content | ConvertFrom-Json)
+    # curl + a body file avoids Windows PowerShell's JSON quoting/BOM problems.
+    $bodyFile = [IO.Path]::GetTempFileName()
+    $headerFile = [IO.Path]::GetTempFileName()
+    $outFile = [IO.Path]::GetTempFileName()
+    try {
+        [IO.File]::WriteAllText($bodyFile, $Body, [Text.UTF8Encoding]::new($false))
+        $curlArgs = @(
+            "-sS", "--max-time", "15",
+            "-D", $headerFile, "-o", $outFile, "-w", "%{http_code}",
+            "-X", "POST", $Uri,
+            "-H", "Content-Type: application/json",
+            "-H", "Accept: application/json, text/event-stream",
+            "-H", "Authorization: Bearer test",
+            "--data-binary", "@$bodyFile"
+        )
+        foreach ($k in $Headers.Keys) { $curlArgs += @("-H", "$k`: $($Headers[$k])") }
+        $statusText = (& curl.exe @curlArgs 2>&1 | Out-String).Trim()
+        $status = 0
+        [void][int]::TryParse($statusText, [ref]$status)
+        $text = if (Test-Path $outFile) { [IO.File]::ReadAllText($outFile) } else { "" }
+        $session = $null
+        foreach ($line in Get-Content $headerFile -ErrorAction SilentlyContinue) {
+            if ($line -match '^(?i)mcp-session-id:\s*(.+)$') { $session = $Matches[1].Trim() }
+        }
+        $json = $null
+        try { $json = $text | ConvertFrom-Json } catch { }
+        return @{ Status = $status; Session = $session; Json = $json; Body = $text }
+    } finally {
+        Remove-Item $bodyFile, $headerFile, $outFile -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -52,11 +70,23 @@ try {
     if (-not $ready) { throw "public Envoy did not become ready" }
 
     Write-Host "==> legacy /mcp initialize + tools/list"
-    $init = Invoke-JsonPost "http://127.0.0.1:8080/mcp" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
-    $session = $init.Headers["Mcp-Session-Id"]
+    $init = $null
+    for ($i = 0; $i -lt 30; $i++) {
+        try {
+            $init = Invoke-JsonPost "http://127.0.0.1:8080/mcp" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"t8","version":"0"}}}'
+            if ($init.Status -eq 200) { break }
+            Start-Sleep -Seconds 1
+        } catch {
+            # policy/ext_authz can still be starting; public Envoy returns 503.
+            Start-Sleep -Seconds 1
+        }
+    }
+    if (-not $init) { throw "legacy initialize failed after retries" }
+    $session = $init.Session
     if (-not $session) { throw "legacy initialize did not return Mcp-Session-Id" }
     $listBody = '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
     $list = Invoke-JsonPost "http://127.0.0.1:8080/mcp" $listBody @{"Mcp-Session-Id" = $session}
+    if ($list.Status -ne 200) { throw "legacy tools/list status $($list.Status): $($list.Body)" }
     $names = @($list.Json.result.tools | ForEach-Object { $_.name })
     if (-not ($names -contains "weather__get_weather") -or -not ($names -contains "crm__get_customer")) {
         throw "legacy catalog missing expected tools: $($names -join ',')"
@@ -64,10 +94,18 @@ try {
 
     Write-Host "==> modern /modern/mcp discover + tools/list"
     $meta = '"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}'
-    $discover = Invoke-JsonPost "http://127.0.0.1:8080/modern/mcp" ('{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{' + $meta + '}}') @{
-        "MCP-Protocol-Version" = "2026-07-28"
-        "Mcp-Method"           = "server/discover"
+    $discover = $null
+    for ($i = 0; $i -lt 30; $i++) {
+        try {
+            $discover = Invoke-JsonPost "http://127.0.0.1:8080/modern/mcp" ('{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{' + $meta + '}}') @{
+                "MCP-Protocol-Version" = "2026-07-28"
+                "Mcp-Method"           = "server/discover"
+            }
+            if ($discover.Status -eq 200) { break }
+            Start-Sleep -Seconds 1
+        } catch { Start-Sleep -Seconds 1 }
     }
+    if (-not $discover) { throw "modern discover failed after retries" }
     if ($discover.Status -ne 200) { throw "modern discover status $($discover.Status)" }
     $modernList = Invoke-JsonPost "http://127.0.0.1:8080/modern/mcp" ('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{' + $meta + '}}') @{
         "MCP-Protocol-Version" = "2026-07-28"
@@ -84,5 +122,9 @@ try {
     if ($up) { docker compose -f $compose logs --no-color | Select-Object -Last 120 }
     exit 1
 } finally {
-    if ($up) { docker compose -f $compose down -v *> $null }
+    if ($up) {
+        # Teardown progress is written to stderr; do not turn it into a script failure.
+        $ErrorActionPreference = "Continue"
+        docker compose -f $compose down -v *> $null
+    }
 }

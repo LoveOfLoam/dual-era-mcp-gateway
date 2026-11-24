@@ -42,14 +42,14 @@ services:
     depends_on: [weather, crm]
 
   envoy-legacy:
-    image: ${ENVOY_IMAGE:-envoyproxy/envoy:dev}
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.40.2}
     command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
     volumes:
       - ./envoy-legacy.yaml:/etc/envoy/envoy.yaml:ro
     expose: ["10001"]
 
   envoy-public:
-    image: ${ENVOY_IMAGE:-envoyproxy/envoy:dev}
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.40.2}
     command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
     volumes:
       - ./envoy-public.yaml:/etc/envoy/envoy.yaml:ro

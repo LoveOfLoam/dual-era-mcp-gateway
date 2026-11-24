@@ -22,7 +22,7 @@ Policy and operations:
 - ext_authz gRPC (`cmd/policy`) for API key → tenant / allowlist.
 - ratelimit gRPC with in-process fixed-window limits and optional Redis Lua fixed-window (`-redis-addr`).
 - `/metrics` Prometheus text + `X-Trace-Id` propagation.
-- T8 Docker/Envoy harness and Helm chart skeleton; both are environment-dependent.
+- T8 Docker/Envoy harness (PASS on Envoy 1.40.2) and Helm chart skeleton.
 
 Planning and evidence:
 
@@ -135,16 +135,18 @@ Optional checks:
 powershell -File scripts/bench.ps1          # in-process facade microbenchmarks
 powershell -File scripts/helm-lint.ps1     # SKIP without Helm
 powershell -File scripts/envoy-validate.ps1
-powershell -File scripts/t8.ps1            # SKIP without Docker/Envoy
+powershell -File scripts/t8.ps1            # Docker/Envoy T8 smoke test
 ```
 
 Current status (2026-11-25):
 
 - T0–T7 boundary tests: **green**.
 - xDS ADS/CDS/RDS/LDS and ACK/NACK callback tests: **green**.
-- `go vet`: green; CI race run: **green**.
+- `go vet` / `go build`: green; CI race run: **green** on the previous batch.
 - `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
-- `scripts/t8.ps1`: **SKIP** in this environment (Docker daemon unavailable).
+- `scripts/t8.ps1`: **PASS** with `envoyproxy/envoy:v1.40.2` on Docker Desktop.
+  See [`docs/t8-report.md`](docs/t8-report.md). TLS/SSE/ratelimit/Redis are not
+  part of this T8 run.
 
 See [`docs/test-report.md`](docs/test-report.md) and [`docs/spec/acceptance-tests.md`](docs/spec/acceptance-tests.md).
 
@@ -233,7 +235,7 @@ Implemented:
 
 Not implemented / not verified:
 
-- T8 actual Envoy run in this environment (Docker unavailable);
+- T8 coverage of TLS/SSE/ratelimit/Redis (the base path split + router + modern facade is PASS);
 - single-endpoint B2;
 - full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;

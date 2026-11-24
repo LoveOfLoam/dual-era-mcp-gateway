@@ -2,7 +2,7 @@
 
 - 版本：2.0
 - 日期：2026-11-25
-- 状态：B1 MVP **库级/本地级**完成；Envoy 运行时 T8 仍被环境阻塞
+- 状态：B1 MVP **库级/本地级**完成；T8 真实 Envoy 拓扑已 PASS（Envoy 1.40.2）
 - 上位文档：[`../envoy-mcp-gateway-plan-a-prd.md`](../envoy-mcp-gateway-plan-a-prd.md)
 - 细化规格：
   - [`docs/superpowers/specs/2026-11-24-dual-era-b1-design.md`](docs/superpowers/specs/2026-11-24-dual-era-b1-design.md)
@@ -51,7 +51,7 @@ Client
 - 两层配置抽象：Provider（static/OpenAPI/K8s manifest/Nacos）+ ToolSource（native/REST）。
 - 控制面：配置校验、SHA-256 版本、快照、历史/回滚、ACK/NACK 模型、Envoy 配置生成、public CDS/RDS/LDS xDS。
 - 策略：API key、tenant 派生、allowlist、进程内固定窗口限流。
-- 测试：T0–T7 + ADS CDS/RDS/LDS + ACK/NACK + ext_authz/ratelimit 测试通过；T8 未跑。
+- 测试：T0–T7 + ADS CDS/RDS/LDS + ACK/NACK + ext_authz/ratelimit 测试通过；T8 Envoy 1.40.2 PASS。
 
 ### 0.3 不能夸大的部分
 
@@ -134,7 +134,7 @@ MVP 代码级完成：
 | Envoy | 必须锁 digest；当前 Gate 1 锁 `envoyproxy/envoy:dev` 的 digest，1.41.0 final 后 re-lock |
 | K8s | Phase 2；当前未实现 CRD/controller |
 | Redis | Phase 2；当前限流是进程内固定窗口 |
-| 环境 | 本机无 Envoy、无 Docker daemon、无 gcc/clang；`-race` 与 T8 需 CI/外部环境 |
+| 环境 | Docker 可用（需 named-pipe 全权限）；无 Envoy binary、无 gcc/clang；`-race` 走 CI |
 | 凭据 | GitHub push 在当前会话可能失败（`SEC_E_NO_CREDENTIALS`），不代表代码问题 |
 | 网络 | Phase 1 可信内网；不承诺公网安全 |
 | MCP | HTTP/SSE；stdio 单进程桥已做，进程池 Phase 2 |
@@ -292,9 +292,9 @@ MVP 代码级完成：
 
 | ID | 任务 | 优先级 | 依赖 | 验收 | 状态 |
 |---|---|---|---|---|---|
-| C-01 | Public path routing | P0 | B-07 | `/mcp` 与 `/modern/mcp` 分流 | `[~]` 本地 edge；Envoy 未跑 |
-| C-02 | Legacy `/mcp` | P0 | C-01 | initialize/list/call | `[x]` 本地；Envoy `[ ]` |
-| C-03 | Modern `/modern/mcp` | P0 | C-01 | discover/list/call | `[x]` |
+| C-01 | Public path routing | P0 | B-07 | `/mcp` 与 `/modern/mcp` 分流 | `[x]` T8 PASS |
+| C-02 | Legacy `/mcp` | P0 | C-01 | initialize/list/call | `[x]` T8 initialize/list PASS |
+| C-03 | Modern `/modern/mcp` | P0 | C-01 | discover/list/call | `[x]` T8 discover/list PASS |
 | C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz；无 TLS/ratelimit filter |
 | C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[~]` TLS overlay + dev cert 脚本；未运行 |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
@@ -304,7 +304,7 @@ MVP 代码级完成：
 | C-10 | Origin 校验 | P0 | C-03 | 非法 403 | `[x]` facade |
 | C-11 | 零停机 LDS/CDS | P0 | C-06 | 100 次变更 + SSE | `[ ]` |
 | C-12 | 优雅 drain | P0 | C-01 | 滚动更新 | `[ ]` |
-| C-13 | Access log JSON | P0 | C-01 | 字段稳定 | `[~]` T8 Envoy JSON access log 配置；未运行 |
+| C-13 | Access log JSON | P0 | C-01 | 字段稳定 | `[x]` T8 实际输出 JSON access log |
 | C-14 | OTel Trace | P0 | C-01 | traceparent 传播 | `[~]` X-Trace-Id/traceparent；无 OTel exporter |
 
 ### WS-D 策略面
@@ -316,7 +316,7 @@ MVP 代码级完成：
 | D-03 | 工具 allowlist | P0 | D-01 | 越权 403 | `[x]` |
 | D-04 | 内存 RPM 限流 | P0 | D-01 | 超限 429/layer | `[x]` |
 | D-05 | Redis Lua 限流 | P0 | D-04 | 原子、跨副本 | `[x]` `RedisLimiter` + miniredis 测试；无真实 Redis 压测 |
-| D-06 | ext_authz gRPC | P0 | D-01 | Envoy 可调用 | `[x]` 服务 + 单测；T8 未跑 |
+| D-06 | ext_authz gRPC | P0 | D-01 | Envoy 可调用 | `[x]` 服务 + 单测 + T8 实际调用 |
 | D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[x]` 服务 + 单测；未接 Redis |
 | D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[~]` ratelimit 服务有 body/Retry-After；Envoy local reply 未验证 |
 | D-09 | JWT/JWKS | P0 | D-06 | 过期/错 audience 401 | `[x]` HS256/RS256/JWKS 缓存 + 测试；无密钥轮换/审计 |
@@ -356,9 +356,9 @@ MVP 代码级完成：
 | F-07 | 告警规则 | P0 | F-01 | NACK/5xx/429/Redis/证书 | `[~]` 4 条 starter 规则；未接 Prometheus |
 | F-08 | Runbook | P0 | C-11 | 启动/变更/故障/回滚 | `[x]` `docs/runbook.md` |
 | F-09 | kind + Helm | P0 | C-05 | 5 分钟起 | `[~]` Helm 骨架；无 kind/集群验证 |
-| F-10 | docker-compose | P1 | C-05 | 本地一键 | `[x]` T8 compose；本机 Docker 不可用 |
+| F-10 | docker-compose | P1 | C-05 | 本地一键 | `[x]` T8 compose 实际运行 |
 | F-11 | CI | P0 | G-01..G-08 | build/vet/test/race/lint/integration | `[~]` test/vet/build/race；无 lint/集成 |
-| F-12 | T8 harness | P0 | F-09/F-10 | Envoy 拓扑测试 | `[~]` harness 已写；运行阻塞 |
+| F-12 | T8 harness | P0 | F-09/F-10 | Envoy 拓扑测试 | `[x]` Envoy 1.40.2 PASS |
 | F-13 | 依赖/镜像扫描 | P1 | F-11 | govulncheck/trivy | `[~]` `scripts/scan.ps1`；本机未安装工具，SKIP |
 
 ### WS-G 测试与文档
@@ -373,7 +373,7 @@ MVP 代码级完成：
 | G-06 | T5 policy | P0 | D-01..D-04 | PASS | `[x]` |
 | G-07 | T6 control plane | P0 | B-04..B-07 | PASS | `[x]` |
 | G-08 | T7 resilience/concurrency | P0 | C-03 | PASS | `[x]` |
-| G-09 | T8 Envoy runtime | P0 | F-12 | 真实拓扑 | `[!]` |
+| G-09 | T8 Envoy runtime | P0 | F-12 | 真实拓扑 | `[x]` PASS |
 | G-10 | AC-01..AC-30 | P0 | T0..T8 | 全部通过或有明确 skip | `[~]` 子集 |
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
 | G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` 本地 Go 3s/10 并发 7.8k RPS；无 Envoy/SSE/长时压测 |
@@ -395,7 +395,7 @@ MVP 代码级完成：
 | ACK/NACK | go-control-plane callback → AckStore | `internal/xds/callbacks_test.go` |
 | 可观测 | `/metrics`、JSON logger、trace id | `internal/obs` 单测 |
 | REST SSRF | metadata host 拒绝 + allowedHosts | `internal/restadapter` 单测 |
-| T8 harness | public/internal Envoy + policy + mocks | `deploy/t8/`、`scripts/t8.ps1`（本机 SKIP） |
+| T8 harness | public/internal Envoy + policy + mocks | `deploy/t8/`、`scripts/t8.ps1`、`docs/t8-report.md`（PASS） |
 | Helm | 5 个 Deployment + Service + ConfigMap | `deploy/helm/dual-era`（无 helm/集群验证） |
 | 微基准 | facade list/call | `docs/benchmarks/2026-11-25.md` |
 | modern MCP client | `ListTools`/`Call`/`Discover` + headers/meta | `internal/modernclient` 单测；`cmd/gateway -modern` |
@@ -413,7 +413,7 @@ MVP 代码级完成：
 | config audit/metrics | actor/reason/old-new + apply/rollback/ACK/NACK counters | `/api/v1/audit`, `/metrics`, manager tests |
 | dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 
-仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。
+仍未完成：T8 的 TLS/SSE/ratelimit/Redis 覆盖、drain、CRD informer/controller、internal `mcp_router` LDS、k6/混沌。
 
 ---
 
@@ -495,7 +495,7 @@ MVP 代码级完成：
 | T5 | policy | `internal/policy`, facade policy tests | `[x]` |
 | T6 | control plane + ADS CDS/RDS/LDS + ACK/NACK | `internal/controlplane`, `internal/xds`, `extauthz`, `ratelimit` | `[x]` |
 | T7 | resilience/concurrency | `internal/facade/resilience_test.go` | `[x]` |
-| T8 | Envoy runtime | `scripts/envoy-validate.ps1` | `[!]` |
+| T8 | Envoy runtime | `scripts/t8.ps1` | `[x]` Envoy 1.40.2 PASS |
 
 ### 6.3 命令
 
@@ -508,7 +508,7 @@ go vet ./...
 本机限制：
 
 - 无 gcc/clang → 本地不能 `-race`；CI 已配置 Linux race。
-- 无 Envoy/Docker → T8 SKIP；不得写成通过。
+- T8 需 Docker named-pipe 全权限；基础拓扑已 PASS，TLS/SSE/ratelimit 仍另行验证。
 - 无 Redis/K8s → 分布式限流/CRD/集成未验证。
 
 ### 6.4 验收覆盖
@@ -528,7 +528,7 @@ go vet ./...
 | `mcp_router` 不支持 modern | 高 | 高 | B1 facade；modern upstream Phase 2 | 已规避 |
 | 单 listener bridge+router 不兼容 | 高 | 中 | 双端点/独立 listener/Go adapter | 已规避 |
 | xDS 学习曲线 | 高 | 中 | public CDS/RDS/LDS；internal 仍静态 | public 已测 |
-| 环境缺 Envoy/Docker/gcc | 高 | 高 | CI/外部环境；明确 SKIP | 阻塞 T8/race |
+| 环境缺 Envoy binary/gcc | 中 | 高 | Docker T8 + CI race | T8 已跑；本机 race 仍走 CI |
 | 范围膨胀 | 高 | 高 | WBS/Gate/Out of Scope | 需持续控制 |
 | 只有库没有运行时 | 中 | 高 | T8/集成列为 P0；README 诚实 | 当前主要风险 |
 | 观测/安全未做 | 高 | 高 | Gate 7；先做最小指标/日志 | 未开始 |
@@ -592,7 +592,7 @@ powershell -File scripts/envoy-validate.ps1
 | GitHub repo + commit history | `[x]` 本地；远端待 push |
 | README（快速开始/架构/限制） | `[x]` |
 | B1 设计/需求/协议/工具源/Provider | `[x]` |
-| 验收测试 T0–T8 | `[~]` T8 阻塞 |
+| 验收测试 T0–T8 | `[x]` T8 PASS |
 | 测试报告/覆盖率 | `[x]` |
 | PRD traceability | `[x]` |
 | CI（build/vet/test；race on Linux） | `[~]` 无 lint/集成 |
@@ -639,7 +639,7 @@ powershell -File scripts/envoy-validate.ps1
 ### P0：让“运行时”可信
 
 1. 把 `internal/policy` 接入 `cmd/gateway`（API key/allowlist/限流）。
-2. 用 Docker/Envoy 跑 T8：public path + internal `mcp_router` + REST bridge。
+2. T8 已跑通 public path + internal `mcp_router`；下一步补 TLS/SSE/ratelimit/Redis 覆盖。
 3. 补 TLS/HTTP2、body/header 限制、SSE。
 4. 实现 ext_authz/ratelimit gRPC（先最小，再接 Envoy）。
 5. 补 internal listener LDS，或明确长期保持静态拓扑。
@@ -667,3 +667,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-24 | v1 | 初始任务清单；B1 双端点；T0–T7；xDS deferred |
 | 2026-11-25 | v2 | 按 PRD 重写：架构/职责/端口/WBS/Gate/追踪/测试/风险/Runbook；补充 K8s/Nacos/REST adapter/ADS/CDS 状态；明确 T8/race 环境阻塞与“库级完成≠生产完成” |
 | 2026-11-25 | v3 | P2 增量：ext_authz/ratelimit gRPC、gateway 策略接线、public CDS/RDS/LDS、ACK/NACK callback、`/metrics`/trace、T8/Helm harness、REST SSRF allowlist、facade 微基准；T8 运行仍阻塞 |
+| 2026-11-25 | v4 | T8 实跑 PASS（Envoy 1.40.2，Docker Desktop）：修 gcr.io 基础镜像、PowerShell JSON body、启动竞态与 teardown 退出码；补 `docs/t8-report.md` |

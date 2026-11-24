@@ -1,6 +1,7 @@
 # T8 Envoy runtime harness
 
-This is the real-topology smoke test for B1:
+This is the real-topology smoke test for B1. It passed on 2026-11-25 with
+`envoyproxy/envoy:v1.40.2`; see [`docs/t8-report.md`](../../docs/t8-report.md).
 
 ```
 client
@@ -31,8 +32,9 @@ powershell -File scripts/t8.ps1
 
 ## Important limitations
 
-- The default `ENVOY_IMAGE` is `envoyproxy/envoy:dev` because MCP filters are
-  experimental. For a reproducible run, set the digest from `docs/spike-envoy-mcp.md`:
+- The default `ENVOY_IMAGE` is `envoyproxy/envoy:v1.40.2`, the baseline used by
+  Gate 1. MCP filters are still experimental. For a fully reproducible run, set
+  the digest from `docs/spike-envoy-mcp.md`:
 
   ```powershell
   $env:ENVOY_IMAGE="envoyproxy/envoy@sha256:..."

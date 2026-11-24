@@ -228,6 +228,7 @@ Status rules:
 | `go test ./...` | PASS |
 | `go vet ./...` | PASS |
 | `internal/xds` ADS CDS/RDS/LDS + ACK/NACK | PASS |
+| T8 Envoy 1.40.2 Docker topology | PASS (`docs/t8-report.md`) |
 | `internal/extauthz` / `internal/ratelimit` | PASS |
 | `scripts/test.ps1` | PASS；Envoy validate SKIP |
 | `go test -race ./...` | BLOCKED locally（no CGO/gcc）；CI configured |
