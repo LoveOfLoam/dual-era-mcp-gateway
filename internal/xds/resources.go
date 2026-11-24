@@ -2,6 +2,8 @@ package xds
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -20,13 +22,29 @@ import (
 	"dual-era-mcp-gateway/internal/controlplane"
 )
 
-const (
-	publicListenerPort = 8443
-	modernFacadeHost   = "modern-facade"
-	modernFacadePort   = 8080
-	legacyInternalHost = "127.0.0.1"
-	legacyInternalPort = 10001
+var (
+	publicListenerPort = uint32(envInt("XDS_PUBLIC_PORT", 8443))
+	modernFacadeHost   = envString("XDS_MODERN_HOST", "modern-facade")
+	modernFacadePort   = uint32(envInt("XDS_MODERN_PORT", 8080))
+	legacyInternalHost = envString("XDS_LEGACY_HOST", "127.0.0.1")
+	legacyInternalPort = uint32(envInt("XDS_LEGACY_PORT", 10001))
 )
+
+func envString(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func envInt(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
+	}
+	return fallback
+}
 
 // buildResources builds CDS + RDS + LDS for the public B1 listener. The
 // internal mcp_router listener remains static in the MVP.
@@ -86,6 +104,7 @@ func publicListener() (*listener.Listener, error) {
 		StatPrefix: "public",
 		CodecType:  hcm.HttpConnectionManager_AUTO,
 		RouteSpecifier: &hcm.HttpConnectionManager_Rds{Rds: &hcm.Rds{
+			RouteConfigName: "public",
 			ConfigSource: &core.ConfigSource{
 				ResourceApiVersion:    core.ApiVersion_V3,
 				ConfigSourceSpecifier: &core.ConfigSource_Ads{Ads: &core.AggregatedConfigSource{}},

@@ -1,0 +1,30 @@
+# Overlay: public Envoy driven entirely by ADS from cmd/controlplane.
+services:
+  controlplane:
+    build:
+      context: ../..
+      dockerfile: deploy/t8/Dockerfile.prebuilt
+    entrypoint: ["/controlplane"]
+    command:
+      ["-addr", ":18080", "-xds-addr", ":18000", "-config", "/config/xds-config.json"]
+    volumes:
+      - ./xds-config.json:/config/xds-config.json:ro
+    environment:
+      XDS_MODERN_HOST: gateway
+      XDS_MODERN_PORT: "8080"
+      XDS_LEGACY_HOST: envoy-legacy
+      XDS_LEGACY_PORT: "10001"
+      XDS_PUBLIC_PORT: "8443"
+    expose: ["18000", "18080"]
+    ports:
+      - "18080:18080"
+
+  envoy-xds:
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.40.2}
+    command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+    volumes:
+      - ./envoy-xds.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "8443:8443"
+      - "9902:9902"
+    depends_on: [controlplane, gateway, envoy-legacy]

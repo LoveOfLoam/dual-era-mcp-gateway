@@ -32,6 +32,8 @@
 - T8 image uses `Dockerfile.prebuilt` because Docker-build-time Go module download is blocked.
 - Added T8 load run (`scripts/t8-load.ps1`): 3,114 RPS, p95 4.80ms, 0 errors over 5s/10 workers (single-host Docker evidence).
 - Added T8 chaos run (`scripts/t8-chaos.ps1`): stopping crm keeps partial catalog and returns 500 for the dead tool; recovery works; stopping policy makes Envoy fail closed with 403; stopping Redis makes ratelimit fall back and still returns 200.
+- Added T8 xDS churn (`scripts/t8-xds.ps1`): 100 CDS/RDS applies under live load, 0 errors, 250 ACKs; fixed missing HCM `RouteConfigName`.
+- Added T8 mTLS (`scripts/t8-mtls.ps1`): client cert 200, no cert rejected.
 
 ## Test log
 

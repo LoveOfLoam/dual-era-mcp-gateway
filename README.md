@@ -145,7 +145,8 @@ Current status (2026-11-25):
 - `go vet` / `go build`: green; CI race run: **green** on the previous batch.
 - `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
 - `scripts/t8.ps1`: **PASS** with `envoyproxy/envoy:v1.40.2` on Docker Desktop.
-  `scripts/t8-mtls.ps1`: **PASS** (client certificate required).
+  `scripts/t8-mtls.ps1`: **PASS** (client certificate required);
+  `scripts/t8-xds.ps1`: **PASS** (100 CDS/RDS churns, 0 errors).
   See [`docs/t8-report.md`](docs/t8-report.md). HTTP and `-TLS` overlays both PASS;
   TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`), the REST
   bridge is aggregated as `rest__*`, and ratelimit uses Redis
@@ -214,6 +215,7 @@ scripts/load-local.ps1 # local Go-mode load run
 scripts/t8-load.ps1  # real Envoy T8 load run
 scripts/t8-chaos.ps1 # T8 partial backend / ext_authz failure injection
 scripts/t8-mtls.ps1  # T8 client-certificate enforcement
+scripts/t8-xds.ps1   # T8 100-change CDS/RDS churn + ACKs
 ```
 
 ## Scope and non-goals

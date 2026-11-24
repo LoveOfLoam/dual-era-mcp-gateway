@@ -302,7 +302,7 @@ MVP 代码级完成：
 | C-08 | retry/outlier/circuit | P0 | C-06 | 故障注入 | `[~]` public cluster/route 配置；未运行故障注入 |
 | C-09 | body/header 限制 | P0 | C-03 | 413/431 | `[~]` body 只有 facade |
 | C-10 | Origin 校验 | P0 | C-03 | 非法 403 | `[x]` facade |
-| C-11 | 零停机 LDS/CDS | P0 | C-06 | 100 次变更 + SSE | `[ ]` |
+| C-11 | 零停机 LDS/CDS | P0 | C-06 | 100 次变更 + SSE | `[~]` T8 100 次 CDS/RDS 变更 + live load 0 error，ACK 250；未做 LDS 变更/SSE/NACK |
 | C-12 | 优雅 drain | P0 | C-01 | 滚动更新 | `[ ]` |
 | C-13 | Access log JSON | P0 | C-01 | 字段稳定 | `[x]` T8 实际输出 JSON access log |
 | C-14 | OTel Trace | P0 | C-01 | traceparent 传播 | `[~]` X-Trace-Id/traceparent；无 OTel exporter |
@@ -678,3 +678,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v12 | T8 chaos 增加 Redis 停机：ratelimit fallback 后请求仍 200，验证 fail-open |
 | 2026-11-25 | v13 | 增加 `cmd/sse-shim`：public GET `/mcp` + `/mcp/message` 走 shim，T8 `ssecheck` PASS（HTTP/TLS）；raw mcp_router GET 仍 405 |
 | 2026-11-25 | v14 | T8 mTLS：`cmd/mtlscheck` 带客户端证书 200，无证书被 `tls: certificate required` 拒绝；B-12 仍缺 HA/leader |
+| 2026-11-25 | v15 | T8 xDS：修复 HCM `RouteConfigName`；100 次 CDS/RDS 变更 + live load 12,580 req/0 error，ACK 250 |

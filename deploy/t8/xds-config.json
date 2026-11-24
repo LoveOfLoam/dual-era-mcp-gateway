@@ -1,0 +1,18 @@
+{
+  "sources": [
+    {
+      "name": "weather",
+      "type": "mcp",
+      "protocol": "legacy",
+      "endpoint": "http://weather:9001/mcp",
+      "prefix": "weather"
+    },
+    {
+      "name": "crm",
+      "type": "mcp",
+      "protocol": "legacy",
+      "endpoint": "http://crm:9002/mcp",
+      "prefix": "crm"
+    }
+  ]
+}

@@ -29,6 +29,8 @@ function Build-T8Binaries {
         if ($LASTEXITCODE -ne 0) { throw "build rest-mock failed" }
         go build -trimpath -o (Join-Path $bin "sse-shim") ./cmd/sse-shim
         if ($LASTEXITCODE -ne 0) { throw "build sse-shim failed" }
+        go build -trimpath -o (Join-Path $bin "controlplane") ./cmd/controlplane
+        if ($LASTEXITCODE -ne 0) { throw "build controlplane failed" }
     } finally {
         Pop-Location
         if ($oldGOOS) { $env:GOOS = $oldGOOS } else { Remove-Item Env:GOOS -ErrorAction SilentlyContinue }

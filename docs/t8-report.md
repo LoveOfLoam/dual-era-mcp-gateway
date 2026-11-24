@@ -114,4 +114,5 @@ This is a real SSE transport check, not a mock.
 `mcp_router`/`mcp_multicluster` remain WIP Envoy filters; the image is pinned
 to `v1.40.2` for reproducibility. Use a digest for production.
 
-Client-certificate enforcement is in [`t8-mtls.md`](t8-mtls.md).
+Client-certificate enforcement is in [`t8-mtls.md`](t8-mtls.md); xDS churn is
+in [`t8-xds.md`](t8-xds.md).
