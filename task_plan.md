@@ -94,6 +94,7 @@ Public Envoy :8443
 ### Phase 6 — boundary suite + Envoy
 
 - [x] T0–T7 all green under `go test ./...` (local host has no CGO/gcc, so `-race` is CI-only).
+- [x] `.github/workflows/test.yml` runs `go test -race ./...` on Linux CI.
 - [x] `scripts/test.ps1` supports `-Race`; local run without gcc falls back and warns.
 - [x] `scripts/envoy-validate.ps1` runs `envoy --mode validate` when available, SKIP otherwise.
 - [x] `deploy/envoy/` bootstrap + generated config endpoint.
