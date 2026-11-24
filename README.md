@@ -17,6 +17,12 @@ And **two config layers**:
 - **Provider**: static YAML, OpenAPI, Kubernetes ConfigMap/McpSource manifest, and Nacos Config Service.
 - **ToolSource**: normalized native MCP / REST behind one `ListTools`/`Call`/`Health` contract.
 
+Planning and evidence:
+
+- [Detailed task plan](task_plan.md) — WBS, gates, risks, runbook, current status.
+- [PRD → implementation traceability](docs/spec/traceability.md) — FR/AC mapping with DONE/PARTIAL/TODO.
+- [Test report](docs/test-report.md) — commands, coverage, skipped environment items.
+
 ## Architecture (B1)
 
 ```

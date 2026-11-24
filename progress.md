@@ -16,6 +16,8 @@
 - Added `K8sManifestProvider`, `NacosProvider`, and `internal/restadapter`.
 - Added `internal/xds` minimal ADS/CDS server using `go-control-plane`, plus an ADS streaming test.
 - Wired xDS apply/rollback into `cmd/controlplane`.
+- Rewrote `task_plan.md` as v2: architecture, component responsibilities, ports, WBS by workstream, gates, test plan, risks, runbook, and explicit `[x]/[~]/[ ]/[!]` status.
+- Added `docs/spec/traceability.md`: PRD FR-CP/DP/POL/TR/STD/REST/OBS/SEC/OPS/TS + NFR + AC-01..30 mapping.
 
 ## Test log
 
