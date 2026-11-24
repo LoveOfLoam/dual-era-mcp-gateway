@@ -298,7 +298,7 @@ MVP 代码级完成：
 | C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz+ratelimit；mcp 在 internal；无 TLS |
 | C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[x]` T8 `-TLS` PASS，TLS1.3+ALPN h2，`h2check` 实际 HTTP/2 200 |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
-| C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[ ]` |
+| C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[~]` T8 实测 legacy GET `/mcp` → 405；`mcp_router` 不支持 SSE，需 Go shim |
 | C-08 | retry/outlier/circuit | P0 | C-06 | 故障注入 | `[~]` public cluster/route 配置；未运行故障注入 |
 | C-09 | body/header 限制 | P0 | C-03 | 413/431 | `[~]` body 只有 facade |
 | C-10 | Origin 校验 | P0 | C-03 | 非法 403 | `[x]` facade |

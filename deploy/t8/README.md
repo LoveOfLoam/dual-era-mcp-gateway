@@ -42,8 +42,9 @@ powershell -File scripts/t8.ps1
 
 - This harness includes `ext_authz` and the Envoy `ratelimit` filter (70 calls
   produce 60×200 / 10×429 with the demo RPM=60 policy). It does **not** include
-  Redis-backed limits, REST bridge, SSE long connections, TLS runtime, or
-  100-change zero-downtime. Those are separate gates.
+  Redis-backed limits, REST bridge, SSE long connections, or 100-change
+  zero-downtime. A legacy SSE GET currently returns 405 from `mcp_router`; see
+  `docs/t8-report.md`.
 - The **TLS overlay** (`docker-compose.tls.yml` + `envoy-public-tls.yaml` +
   `scripts/gen-dev-cert.ps1`) is exercised: `scripts/t8.ps1 -TLS` PASSes the
   same initialize/list/ratelimit checks over HTTPS, with TLSv1.3 + ALPN h2 and

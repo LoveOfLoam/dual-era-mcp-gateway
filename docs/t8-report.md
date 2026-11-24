@@ -83,11 +83,25 @@ used for the actual HTTP/2 request.
 6. **Catalog fanout race** → `tools/list` could return only one backend right
    after startup; the script now retries until both tools appear.
 
+## SSE finding
+
+A legacy SSE probe was run:
+
+```text
+GET /mcp with Accept: text/event-stream and Mcp-Session-Id
+-> HTTP/1.1 405 Method Not Allowed
+```
+
+`mcp_router` in this Envoy build does not implement the legacy GET/SSE
+transport. The gateway is POST JSON-RPC only on this path. SSE needs a Go shim
+or a different data-plane component; it is not claimed.
+
 ## Not covered by this run
 
 - mTLS/client certificates;
 - Redis-backed ratelimit (the in-memory policy is exercised);
 - REST bridge on the internal listener;
+- SSE (observed 405);
 - SSE long connections and zero-downtime LDS/CDS churn;
 - multi-instance HA, canary, K8s.
 

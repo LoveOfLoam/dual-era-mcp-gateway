@@ -240,7 +240,7 @@ Not implemented / not verified:
 - single-endpoint B2;
 - full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;
-- TLS/mTLS runtime validation (T8 has an optional TLS overlay), SSE long-connection, zero-downtime LDS;
+- TLS/mTLS runtime validation (T8 TLS passes; mTLS not tested), SSE (T8 `mcp_router` returns 405), zero-downtime LDS;
 - live Kubernetes informer / controller / CRDs;
 - Redis production deployment validation (the Redis Lua limiter has miniredis tests); JWT;
 - complex REST adapter multipart/long-running (OAuth2/HMAC are implemented);
