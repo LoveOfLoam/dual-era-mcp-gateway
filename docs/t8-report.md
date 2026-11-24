@@ -41,9 +41,15 @@ T8 PASS (TLS): public path split + internal mcp_router + modern facade + ratelim
 tls_exit=0
 ```
 
+The TLS run also executes `cmd/h2check`, a Go `http2.Transport` client:
+
+```text
+==> actual HTTP/2: status=200 proto=HTTP/2.0
+```
+
 TLS also negotiated `TLSv1.3` + `ALPN protocol: h2` (checked with
-`openssl s_client`). Windows `curl.exe` lacks `--http2`, so the end-to-end TLS
-request itself was HTTP/1.1; an actual HTTP/2 request is not claimed.
+`openssl s_client`). Windows `curl.exe` lacks `--http2`, so the Go client is
+used for the actual HTTP/2 request.
 
 ## Checks covered
 
@@ -57,7 +63,7 @@ request itself was HTTP/1.1; an actual HTTP/2 request is not claimed.
 - Envoy `ratelimit` filter + Go ratelimit service: 60 calls allowed, 10 calls
   returned 429 in the 70-call burst (policy RPM=60).
 - TLS overlay: same initialize/list/ratelimit checks over HTTPS; TLSv1.3 + ALPN h2
-  negotiated.
+  negotiated; actual HTTP/2 `initialize` returns `status=200 proto=HTTP/2.0`.
 
 ## Issues fixed during the run
 
@@ -79,7 +85,6 @@ request itself was HTTP/1.1; an actual HTTP/2 request is not claimed.
 
 ## Not covered by this run
 
-- actual HTTP/2 **request** (curl on this Windows host lacks `--http2`; ALPN h2 is verified);
 - mTLS/client certificates;
 - Redis-backed ratelimit (the in-memory policy is exercised);
 - REST bridge on the internal listener;

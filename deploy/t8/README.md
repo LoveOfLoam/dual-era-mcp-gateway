@@ -46,7 +46,8 @@ powershell -File scripts/t8.ps1
   100-change zero-downtime. Those are separate gates.
 - The **TLS overlay** (`docker-compose.tls.yml` + `envoy-public-tls.yaml` +
   `scripts/gen-dev-cert.ps1`) is exercised: `scripts/t8.ps1 -TLS` PASSes the
-  same initialize/list/ratelimit checks over HTTPS, with TLSv1.3 + ALPN h2.
+  same initialize/list/ratelimit checks over HTTPS, with TLSv1.3 + ALPN h2 and
+  an actual HTTP/2 `initialize` via `cmd/h2check`.
 - Public routes/clusters include conservative retry (`reset,connect-failure`),
   circuit-breaker and outlier-detection settings. They are not fault-injected
   or validated here; retrying mutating `tools/call` on 5xx is deliberately not

@@ -1,5 +1,7 @@
 param([switch]$TLS)
 $ErrorActionPreference = "Stop"
+if (-not $env:GOCACHE) { $env:GOCACHE = Join-Path $env:TEMP "gocache-dual-era" }
+if (-not $env:GOMODCACHE) { $env:GOMODCACHE = Join-Path $env:TEMP "gomodcache-dual-era" }
 
 $root = Split-Path -Parent $PSScriptRoot
 $compose = Join-Path $root "deploy\t8\docker-compose.yml"
@@ -10,6 +12,12 @@ if ($TLS) {
     if ($LASTEXITCODE -ne 0) { throw "dev certificate generation failed" }
     $composeArgs += @("-f", (Join-Path $root "deploy\t8\docker-compose.tls.yml"))
     $baseUrl = "https://127.0.0.1:8443"
+    Push-Location $root
+    try {
+        $h2Exe = Join-Path $env:TEMP ("h2check-" + $PID + ".exe")
+        go build -o $h2Exe ./cmd/h2check
+        if ($LASTEXITCODE -ne 0) { throw "h2check build failed" }
+    } finally { Pop-Location }
 }
 
 $docker = Get-Command docker -ErrorAction SilentlyContinue
@@ -77,6 +85,19 @@ try {
         } catch { Start-Sleep -Seconds 2 }
     }
     if (-not $ready) { throw "public Envoy did not become ready" }
+
+    if ($TLS) {
+        $h2Body = Join-Path $env:TEMP ("h2-body-" + $PID + ".json")
+        [IO.File]::WriteAllText($h2Body, '{"jsonrpc":"2.0","id":99,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"h2check","version":"0"}}}', [Text.UTF8Encoding]::new($false))
+        try {
+            $h2Out = & $h2Exe -url "$baseUrl/mcp" -body-file $h2Body -token test 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "actual HTTP/2 request failed: $($h2Out -join ' ')" }
+            Write-Host "==> actual HTTP/2: $($h2Out[0])"
+        } finally {
+            Remove-Item $h2Body -Force -ErrorAction SilentlyContinue
+            Remove-Item $h2Exe -Force -ErrorAction SilentlyContinue
+        }
+    }
 
     Write-Host "==> legacy /mcp initialize + tools/list"
     $init = $null
