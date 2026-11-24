@@ -79,7 +79,7 @@ func main() {
 		// Let Envoy's active health check eject this instance before closing
 		// listener connections, avoiding 503s on a rolling replica stop.
 		edgeHandler.SetDraining(true)
-		time.Sleep(6 * time.Second)
+		time.Sleep(8 * time.Second)
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)

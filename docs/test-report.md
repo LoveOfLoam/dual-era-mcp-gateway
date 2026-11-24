@@ -51,7 +51,7 @@ powershell -File scripts/test.ps1
 | `scripts/test.ps1` | PASS (Envoy validate SKIP) |
 | `scripts/t8-load.ps1` | PASS: 3,114 RPS / 5s and 835 RPS / 600s, 0 errors, p99 3.74ms |
 | `scripts/t8-chaos.ps1` | PASS: partial backend 200, dead call 500, recovery, policy-down 403, Redis-down 200 fallback |
-| `scripts/t8-ha.ps1` | PARTIAL: 2 replicas, stop one under load → 17,274 req / 2×503 |
+| `scripts/t8-ha.ps1` | PARTIAL: 2 explicit gateways, stop one under load → 17,707 req / 3×503 |
 | `scripts/t8-mtls.ps1` | PASS: client cert 200; no cert rejected (`tls: certificate required`) |
 | `scripts/t8-xds.ps1` | PASS: 100 LDS/CDS/RDS changes, 11,711 req, 0 errors, ACK 3→175; long-lived SSE across churn; NACK 0→3143 + recovery 200 |
 

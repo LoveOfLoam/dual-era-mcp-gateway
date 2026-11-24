@@ -157,6 +157,9 @@ static_resources:
               - endpoint:
                   address:
                     socket_address: {address: gateway, port_value: 8080}
+              - endpoint:
+                  address:
+                    socket_address: {address: gateway-b, port_value: 8080}
     - name: legacy_envoy
       type: STRICT_DNS
       dns_lookup_family: V4_ONLY

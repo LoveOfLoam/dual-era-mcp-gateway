@@ -29,7 +29,7 @@ try {
 
 $up = $false
 try {
-    docker compose -f $compose up -d --build --scale gateway=2
+    docker compose -f $compose up -d --build
     if ($LASTEXITCODE -ne 0) { throw "compose up failed" }
     $up = $true
     $ready = $false
@@ -55,9 +55,9 @@ try {
     } -ArgumentList $loadgen, $bodyFile, $outFile
 
     Start-Sleep -Seconds 2
-    Write-Host "==> stopping one gateway replica (t8-gateway-1)"
+    Write-Host "==> stopping one gateway replica (t8-gateway-b-1)"
     $ErrorActionPreference = "Continue"
-    docker stop t8-gateway-1 *> $null
+    docker stop t8-gateway-b-1 *> $null
     $stopExit = $LASTEXITCODE
     $ErrorActionPreference = "Stop"
     if ($stopExit -ne 0) { throw "failed to stop gateway replica" }

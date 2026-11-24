@@ -54,6 +54,19 @@ services:
     expose: ["8080"]
     depends_on: [weather, crm]
 
+  gateway-b:
+    build:
+      context: ../..
+      dockerfile: deploy/t8/Dockerfile.prebuilt
+    entrypoint: ["/gateway"]
+    command:
+      - "-addr"
+      - ":8080"
+      - "-legacy"
+      - "weather=http://weather:9001/mcp,crm=http://crm:9002/mcp"
+    expose: ["8080"]
+    depends_on: [weather, crm]
+
   sse-shim:
     build:
       context: ../..
