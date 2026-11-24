@@ -52,6 +52,7 @@ type RateLimit struct {
 type Config struct {
 	Consumers  []Consumer  `json:"consumers" yaml:"consumers"`
 	RateLimits []RateLimit `json:"rateLimits" yaml:"rateLimits"`
+	JWT        *JWTConfig  `json:"jwt,omitempty" yaml:"jwt,omitempty"`
 }
 
 type window struct {
@@ -66,6 +67,7 @@ type Engine struct {
 	keys      map[string]Consumer
 	limits    []RateLimit
 	windows   map[string]*window
+	jwt       *JWTConfig
 }
 
 // New builds an Engine and validates key digests.
@@ -75,6 +77,7 @@ func New(cfg Config) (*Engine, error) {
 		keys:      make(map[string]Consumer),
 		limits:    cfg.RateLimits,
 		windows:   make(map[string]*window),
+		jwt:       cfg.JWT,
 	}
 	for _, c := range cfg.Consumers {
 		if c.Tenant == "" {
@@ -104,7 +107,7 @@ func (e *Engine) Authenticate(r *http.Request) (string, error) {
 	if key == "" {
 		key = r.Header.Get("X-API-Key")
 	}
-	return e.AuthenticateKey(key)
+	return e.AuthenticateToken(key)
 }
 
 // AuthenticateKey derives the tenant from a raw API key. ext_authz uses this

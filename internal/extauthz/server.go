@@ -43,7 +43,7 @@ func (s *Server) Check(_ context.Context, req *authv3.CheckRequest) (*authv3.Che
 	if key == "" {
 		key = headers["x-api-key"]
 	}
-	tenant, err := s.policy.AuthenticateKey(key)
+	tenant, err := s.policy.AuthenticateToken(key)
 	tool := headers["mcp-name"]
 	if tool == "" {
 		tool = headers["x-mcp-name"]

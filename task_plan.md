@@ -319,7 +319,7 @@ MVP 代码级完成：
 | D-06 | ext_authz gRPC | P0 | D-01 | Envoy 可调用 | `[x]` 服务 + 单测；T8 未跑 |
 | D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[x]` 服务 + 单测；未接 Redis |
 | D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[~]` ratelimit 服务有 body/Retry-After；Envoy local reply 未验证 |
-| D-09 | JWT/JWKS | P0 | D-06 | 过期/错 audience 401 | `[ ]` |
+| D-09 | JWT/JWKS | P0 | D-06 | 过期/错 audience 401 | `[~]` HS256 + issuer/audience/exp；RS256/JWKS 未做 |
 | D-10 | 审计 JSONL | P0 | D-06 | 无 payload/密钥 | `[x]` `internal/audit` + ext_authz/ratelimit |
 | D-11 | 策略指标 | P0 | D-06 | decisions/degraded | `[~]` facade 计数器；gRPC 指标未做 |
 | D-12 | 失败模式 | P0 | D-06 | auth fail-closed；Redis fail-open | `[x]` ext_authz deny + Redis fallback 测试 |
@@ -402,6 +402,7 @@ MVP 代码级完成：
 | trace 传播 | `X-Trace-Id`/traceparent 到 legacy upstream | `internal/legacy` 测试 |
 | ADR/runbook/demo | 7 篇 ADR、runbook、5 分钟 demo、k6 脚本 | `docs/adr`, `docs/runbook.md`, `docs/demo.md`, `scripts/k6` |
 | audit | JSONL auth/rate-limit events + drop counter | `internal/audit` 单测 |
+| JWT | HS256 issuer/audience/exp/nbf + tenant claim | `internal/policy` 单测 |
 | dry-run | config diff API | `controlplane.DiffConfigs` + `/api/v1/dry-run` |
 | dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 

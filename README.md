@@ -197,6 +197,7 @@ Implemented:
 - generic REST adapter (path/query/JSON body);
 - tool prefix/sort/collision;
 - API key/tenant/allowlist/rate limit (memory + optional Redis Lua);
+- HS256 JWT validation (RS256/JWKS is Phase 2);
 - ext_authz + ratelimit gRPC services;
 - config validation/version/rollback/ACK model;
 - public LDS/RDS plus CDS and ACK/NACK callbacks;
