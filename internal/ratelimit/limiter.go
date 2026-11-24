@@ -45,7 +45,7 @@ return 1
 // Redis is unavailable. The fallback may over-admit; it is fail-open by design.
 type RedisLimiter struct {
 	engine   *policy.Engine
-	client   *redis.Client
+	client   redis.UniversalClient
 	fallback MemoryLimiter
 }
 
@@ -54,6 +54,21 @@ func NewRedisLimiter(engine *policy.Engine, addr, password string, db int) *Redi
 	return &RedisLimiter{
 		engine:   engine,
 		client:   redis.NewClient(&redis.Options{Addr: addr, Password: password, DB: db}),
+		fallback: NewMemoryLimiter(engine),
+	}
+}
+
+// NewSentinelLimiter creates a limiter that follows a Redis Sentinel master.
+func NewSentinelLimiter(engine *policy.Engine, master string, sentinels []string, password, sentinelPassword string, db int) *RedisLimiter {
+	return &RedisLimiter{
+		engine: engine,
+		client: redis.NewFailoverClient(&redis.FailoverOptions{
+			MasterName:       master,
+			SentinelAddrs:    sentinels,
+			Password:         password,
+			SentinelPassword: sentinelPassword,
+			DB:               db,
+		}),
 		fallback: NewMemoryLimiter(engine),
 	}
 }

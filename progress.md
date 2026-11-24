@@ -37,6 +37,7 @@
 - Ran 10-minute T8 load: 500,710 requests, 835 RPS, p99 3.74ms, 0 errors (single host, `tools/list`).
 - Added `cmd/crd-controller` + `internal/kube`: McpSource/McpConsumer list/watch, config compile, hash dedupe, Lease leader election, fake API tests. Real-cluster validation still missing.
 - T8 now verifies Envoy `/stats/prometheus` downstream metrics in both HTTP and TLS runs.
+- Added `-redis-sentinel/-redis-master` failover client support; Sentinel T8 experiment hit Docker Desktop `+tilt` and did not promote in 15s.
 
 ## Test log
 

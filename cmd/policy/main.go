@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	authv3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -31,6 +32,9 @@ func main() {
 	redisAddr := flag.String("redis-addr", "", "optional Redis address for distributed rate limiting")
 	redisPassword := flag.String("redis-password", "", "Redis password")
 	redisDB := flag.Int("redis-db", 0, "Redis DB")
+	redisSentinel := flag.String("redis-sentinel", "", "comma-separated Redis Sentinel addresses")
+	redisMaster := flag.String("redis-master", "", "Redis Sentinel master name")
+	redisSentinelPassword := flag.String("redis-sentinel-password", "", "Redis Sentinel password")
 	flag.Parse()
 
 	engine, err := policy.LoadFile(*configPath)
@@ -54,7 +58,16 @@ func main() {
 	healthpb.RegisterHealthServer(authzSrv, health.NewServer())
 
 	var rlServer *ratelimit.Server
-	if *redisAddr != "" {
+	if *redisSentinel != "" && *redisMaster != "" {
+		sentinels := strings.Split(*redisSentinel, ",")
+		for i := range sentinels {
+			sentinels[i] = strings.TrimSpace(sentinels[i])
+		}
+		rl := ratelimit.NewSentinelLimiter(engine, *redisMaster, sentinels, *redisPassword, *redisSentinelPassword, *redisDB)
+		defer rl.Close()
+		rlServer = ratelimit.NewWithLimiter(rl)
+		log.Printf("ratelimit using Redis Sentinel %s master %s", *redisSentinel, *redisMaster)
+	} else if *redisAddr != "" {
 		rl := ratelimit.NewRedisLimiter(engine, *redisAddr, *redisPassword, *redisDB)
 		defer rl.Close()
 		rlServer = ratelimit.NewWithLimiter(rl)

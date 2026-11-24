@@ -218,6 +218,7 @@ scripts/t8-chaos.ps1 # T8 partial backend / ext_authz failure injection
 scripts/t8-mtls.ps1  # T8 client-certificate enforcement
 scripts/t8-xds.ps1   # T8 100-change LDS/CDS/RDS churn + ACKs
 scripts/t8-ha.ps1    # T8 two replicas, stop one (currently partial)
+scripts/t8-redis-ha.ps1 # Redis Sentinel promotion experiment (currently blocked)
 ```
 
 ## Scope and non-goals

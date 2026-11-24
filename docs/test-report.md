@@ -53,6 +53,7 @@ powershell -File scripts/test.ps1
 | Envoy Prometheus stats | PASS: `/stats/prometheus` exposes `envoy_http_downstream_rq_total` |
 | `scripts/t8-chaos.ps1` | PASS: partial backend 200, dead call 500, recovery, policy-down 403, Redis-down 200 fallback |
 | `scripts/t8-ha.ps1` | PARTIAL: 2 explicit gateways, stop one under load → 17,707 req / 3×503 |
+| `scripts/t8-redis-ha.ps1` | PARTIAL/BLOCKED: Sentinel entered tilt, no promotion within 15s |
 | `go test ./internal/kube` | PASS: fake K8s list + config compile + hash dedupe; Lease acquire/renew/expiry |
 | `scripts/t8-mtls.ps1` | PASS: client cert 200; no cert rejected (`tls: certificate required`) |
 | `scripts/t8-xds.ps1` | PASS: 100 LDS/CDS/RDS changes, 11,711 req, 0 errors, ACK 3→175; long-lived SSE across churn; NACK 0→3143 + recovery 200 |
