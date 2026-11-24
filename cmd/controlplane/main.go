@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -105,7 +106,7 @@ func main() {
 			http.Error(w, "bad json", http.StatusBadRequest)
 			return
 		}
-		snap, err := mgr.Apply(next)
+		snap, err := mgr.ApplyWithMeta(next, r.Header.Get("X-Actor"), r.Header.Get("X-Reason"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -116,6 +117,28 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"version": snap.Version})
 	})
+	mux.HandleFunc("/api/v1/audit", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, mgr.Audit())
+	})
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, _ *http.Request) {
+		applies, rollbacks := mgr.Counts()
+		acks, nacks := xdsSrv.ACKs().Counts()
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+		_, _ = fmt.Fprintf(w, `# HELP mcp_controlplane_apply_total Successful config applies.
+# TYPE mcp_controlplane_apply_total counter
+mcp_controlplane_apply_total %d
+# HELP mcp_controlplane_rollback_total Successful config rollbacks.
+# TYPE mcp_controlplane_rollback_total counter
+mcp_controlplane_rollback_total %d
+# HELP mcp_controlplane_xds_ack_total Data-plane ACK events.
+# TYPE mcp_controlplane_xds_ack_total counter
+mcp_controlplane_xds_ack_total %d
+# HELP mcp_controlplane_xds_nack_total Data-plane NACK events.
+# TYPE mcp_controlplane_xds_nack_total counter
+mcp_controlplane_xds_nack_total %d
+`, applies, rollbacks, acks, nacks)
+	})
+
 	mux.HandleFunc("/api/v1/rollback", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -128,7 +151,7 @@ func main() {
 			http.Error(w, "bad json", http.StatusBadRequest)
 			return
 		}
-		snap, err := mgr.Rollback(body.Version)
+		snap, err := mgr.RollbackWithMeta(body.Version, r.Header.Get("X-Actor"), r.Header.Get("X-Reason"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

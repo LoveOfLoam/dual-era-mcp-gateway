@@ -31,12 +31,26 @@ type Snapshot struct {
 	Limits    []policy.RateLimit  `json:"-"`
 }
 
+// AuditEntry records who changed the config and which versions were involved.
+type AuditEntry struct {
+	Action          string    `json:"action"`
+	PreviousVersion string    `json:"previousVersion,omitempty"`
+	Version         string    `json:"version"`
+	Actor           string    `json:"actor,omitempty"`
+	Reason          string    `json:"reason,omitempty"`
+	At              time.Time `json:"at"`
+}
+
 // Manager holds the current snapshot and bounded history.
 type Manager struct {
-	mu      sync.RWMutex
-	current Snapshot
-	history []Snapshot
-	max     int
+	mu        sync.RWMutex
+	current   Snapshot
+	history   []Snapshot
+	audit     []AuditEntry
+	max       int
+	maxAudit  int
+	applies   uint64
+	rollbacks uint64
 }
 
 // New validates cfg and creates a manager.
@@ -45,7 +59,13 @@ func New(cfg Config) (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Manager{current: snap, history: []Snapshot{snap}, max: 20}, nil
+	return &Manager{
+		current:  snap,
+		history:  []Snapshot{snap},
+		max:      20,
+		maxAudit: 100,
+		audit:    []AuditEntry{{Action: "init", Version: snap.Version, At: snap.CreatedAt}},
+	}, nil
 }
 
 // Current returns the current snapshot.
@@ -67,6 +87,11 @@ func (m *Manager) History() []Snapshot {
 // Apply validates and applies a new config. Invalid config leaves the current
 // snapshot untouched.
 func (m *Manager) Apply(cfg Config) (Snapshot, error) {
+	return m.ApplyWithMeta(cfg, "", "")
+}
+
+// ApplyWithMeta applies a config and records actor/reason in the audit log.
+func (m *Manager) ApplyWithMeta(cfg Config, actor, reason string) (Snapshot, error) {
 	snap, err := build(cfg)
 	if err != nil {
 		return Snapshot{}, err
@@ -76,16 +101,24 @@ func (m *Manager) Apply(cfg Config) (Snapshot, error) {
 	if snap.Version == m.current.Version {
 		return m.current, nil
 	}
+	previous := m.current.Version
 	m.current = snap
 	m.history = append(m.history, snap)
 	if len(m.history) > m.max {
 		m.history = m.history[len(m.history)-m.max:]
 	}
+	m.applies++
+	m.appendAuditLocked(AuditEntry{Action: "apply", PreviousVersion: previous, Version: snap.Version, Actor: actor, Reason: reason, At: snap.CreatedAt})
 	return snap, nil
 }
 
 // Rollback restores a historical snapshot by version.
 func (m *Manager) Rollback(version string) (Snapshot, error) {
+	return m.RollbackWithMeta(version, "", "")
+}
+
+// RollbackWithMeta restores a version and records actor/reason.
+func (m *Manager) RollbackWithMeta(version, actor, reason string) (Snapshot, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	var found *Snapshot
@@ -98,6 +131,7 @@ func (m *Manager) Rollback(version string) (Snapshot, error) {
 	if found == nil {
 		return Snapshot{}, fmt.Errorf("version %q not found", version)
 	}
+	previous := m.current.Version
 	restored := *found
 	restored.CreatedAt = time.Now().UTC()
 	m.current = restored
@@ -105,7 +139,32 @@ func (m *Manager) Rollback(version string) (Snapshot, error) {
 	if len(m.history) > m.max {
 		m.history = m.history[len(m.history)-m.max:]
 	}
+	m.rollbacks++
+	m.appendAuditLocked(AuditEntry{Action: "rollback", PreviousVersion: previous, Version: restored.Version, Actor: actor, Reason: reason, At: restored.CreatedAt})
 	return restored, nil
+}
+
+// Audit returns a copy of the bounded audit log, oldest first.
+func (m *Manager) Audit() []AuditEntry {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	out := make([]AuditEntry, len(m.audit))
+	copy(out, m.audit)
+	return out
+}
+
+// Counts returns apply/rollback counters.
+func (m *Manager) Counts() (applies, rollbacks uint64) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.applies, m.rollbacks
+}
+
+func (m *Manager) appendAuditLocked(e AuditEntry) {
+	m.audit = append(m.audit, e)
+	if len(m.audit) > m.maxAudit {
+		m.audit = m.audit[len(m.audit)-m.maxAudit:]
+	}
 }
 
 func build(cfg Config) (Snapshot, error) {

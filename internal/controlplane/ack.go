@@ -21,6 +21,8 @@ type DataPlaneState struct {
 type AckStore struct {
 	mu     sync.RWMutex
 	states map[string]DataPlaneState
+	acks   uint64
+	nacks  uint64
 }
 
 // NewAckStore creates an empty store.
@@ -33,6 +35,7 @@ func (s *AckStore) RecordAck(node, version string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.states[node] = DataPlaneState{Node: node, Version: version, Ack: true, UpdatedAt: time.Now().UTC()}
+	s.acks++
 }
 
 // RecordNack records a rejected configuration.
@@ -40,6 +43,14 @@ func (s *AckStore) RecordNack(node, version, errMsg string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.states[node] = DataPlaneState{Node: node, Version: version, Nack: true, Error: errMsg, UpdatedAt: time.Now().UTC()}
+	s.nacks++
+}
+
+// Counts returns cumulative ACK/NACK events.
+func (s *AckStore) Counts() (acks, nacks uint64) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.acks, s.nacks
 }
 
 // Snapshot returns states sorted by node.

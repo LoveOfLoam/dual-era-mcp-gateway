@@ -111,8 +111,11 @@ go run ./cmd/controlplane -addr :18080 -xds-addr :18000
 
 - `GET /api/v1/status` — current config version + xDS version.
 - `GET /api/v1/revisions` — history.
-- `POST /api/v1/apply` — validate/apply a new `controlplane.Config`.
+- `POST /api/v1/apply` — validate/apply a new `controlplane.Config`; optional
+  `X-Actor` / `X-Reason` are recorded.
 - `POST /api/v1/rollback` — `{"version":"sha256:..."}`.
+- `GET /api/v1/audit` — bounded apply/rollback audit log.
+- `GET /metrics` — apply/rollback/ACK/NACK counters.
 - `GET /api/v1/envoy` — generated draft Envoy topology.
 - `:18000` — ADS server (`internal/xds`); it serves CDS clusters, the public RDS route config, and the public LDS listener.
 

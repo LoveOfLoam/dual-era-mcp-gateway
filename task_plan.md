@@ -285,7 +285,7 @@ MVP 代码级完成：
 | B-12 | 2 副本 + leader election + mTLS | P0 | B-07 | kill 1 副本不断流 | `[ ]` |
 | B-13 | Tool Registry 服务 | P0 | B-01 | `/api/v1/tools`、stale 标记 | `[~]` 代码内有 catalog |
 | B-14 | Canary | P1 | B-12 | node metadata 分 channel | `[ ]` |
-| B-15 | 配置审计 | P0 | B-09 | 谁/何时/旧新 version | `[~]` 运行事件审计有；配置变更审计无 |
+| B-15 | 配置审计 | P0 | B-09 | 谁/何时/旧新 version | `[~]` actor/reason/old-new/audit API；actor 身份未鉴权 |
 | B-16 | Dry-run diff | P1 | B-09 | 不写 snapshot 返回 diff | `[x]` API + 测试 |
 
 ### WS-C 数据面
@@ -347,7 +347,7 @@ MVP 代码级完成：
 
 | ID | 任务 | 优先级 | 依赖 | 验收 | 状态 |
 |---|---|---|---|---|---|
-| F-01 | 控制面指标 | P0 | B-09 | Prometheus | `[x]` 本地 `/metrics` 计数器；无控制面历史指标 |
+| F-01 | 控制面指标 | P0 | B-09 | Prometheus | `[x]` apply/rollback/ACK/NACK `/metrics`；无部署 |
 | F-02 | Envoy 指标 | P0 | C-01 | QPS/latency/5xx | `[~]` admin `/stats/prometheus` + scrape 配置；未部署 |
 | F-03 | 策略指标 | P0 | D-06 | authz/ratelimit | `[~]` facade 计数器；无 gRPC 指标 |
 | F-04 | 结构化日志 | P0 | C-01 | JSON/字段稳定 | `[~]` JSON logger 库；`cmd/gateway` 仍用 log |
@@ -410,6 +410,7 @@ MVP 代码级完成：
 | admission | AdmissionReview 校验 + 单测 | `internal/admission`, `cmd/admission` |
 | controller | ConfigMap 目录 → 控制面 apply，内容哈希去重 | `internal/controller` 测试 |
 | load | 本地 Go-mode 压测：7.8k RPS / p95 2.16ms / 0 error | `scripts/load-local.ps1`, `docs/benchmarks/2026-11-25-local-load.md` |
+| config audit/metrics | actor/reason/old-new + apply/rollback/ACK/NACK counters | `/api/v1/audit`, `/metrics`, manager tests |
 | dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 
 仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。

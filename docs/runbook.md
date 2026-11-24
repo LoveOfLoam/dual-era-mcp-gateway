@@ -58,7 +58,12 @@ go run ./cmd/controlplane -addr :18080 -xds-addr :18000
 - `GET /api/v1/revisions` — history.
 - `POST /api/v1/apply` — new `controlplane.Config` JSON.
 - `POST /api/v1/rollback` — `{"version":"sha256:..."}`.
+- `GET /api/v1/audit` — actor/reason/old-new version history.
+- `GET /metrics` — apply/rollback and xDS ACK/NACK counters.
 - `GET /api/v1/envoy` — draft topology.
+
+`X-Actor` / `X-Reason` headers on apply/rollback are recorded; they are not
+authenticated identities, so do not treat them as an audit-grade principal.
 
 ## Policy services
 

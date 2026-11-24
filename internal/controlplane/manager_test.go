@@ -69,6 +69,49 @@ func TestRejectUnknownToolRef(t *testing.T) {
 	}
 }
 
+func TestAuditAndCounts(t *testing.T) {
+	m, err := New(baseConfig())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	v1 := m.Current().Version
+	cfg2 := baseConfig()
+	cfg2.Sources[0].Endpoint = "http://weather2:8080/mcp"
+	snap, err := m.ApplyWithMeta(cfg2, "alice", "change upstream")
+	if err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	if _, err := m.RollbackWithMeta(v1, "bob", "bad upstream"); err != nil {
+		t.Fatalf("rollback: %v", err)
+	}
+	audit := m.Audit()
+	if len(audit) != 3 {
+		t.Fatalf("audit len = %d: %+v", len(audit), audit)
+	}
+	applyEntry := audit[1]
+	if applyEntry.Action != "apply" || applyEntry.Actor != "alice" || applyEntry.PreviousVersion != v1 || applyEntry.Version != snap.Version {
+		t.Fatalf("apply audit = %+v", applyEntry)
+	}
+	rollbackEntry := audit[2]
+	if rollbackEntry.Action != "rollback" || rollbackEntry.Actor != "bob" || rollbackEntry.Version != v1 {
+		t.Fatalf("rollback audit = %+v", rollbackEntry)
+	}
+	applies, rollbacks := m.Counts()
+	if applies != 1 || rollbacks != 1 {
+		t.Fatalf("counts = %d/%d", applies, rollbacks)
+	}
+}
+
+func TestAckCounts(t *testing.T) {
+	s := NewAckStore()
+	s.RecordAck("envoy-1", "v1")
+	s.RecordNack("envoy-2", "v2", "boom")
+	acks, nacks := s.Counts()
+	if acks != 1 || nacks != 1 {
+		t.Fatalf("counts = %d/%d", acks, nacks)
+	}
+}
+
 func TestApplyAndRollback(t *testing.T) {
 	m, err := New(baseConfig())
 	if err != nil {
