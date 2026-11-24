@@ -9,6 +9,7 @@ import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v3"
 
+	"dual-era-mcp-gateway/internal/audit"
 	"dual-era-mcp-gateway/internal/policy"
 )
 
@@ -16,11 +17,18 @@ import (
 type Server struct {
 	ratelimitv3.UnimplementedRateLimitServiceServer
 	policy *policy.Engine
+	audit  *audit.Logger
 }
 
 // New creates a rate-limit server.
 func New(engine *policy.Engine) *Server {
 	return &Server{policy: engine}
+}
+
+// WithAudit enables JSONL audit events.
+func (s *Server) WithAudit(l *audit.Logger) *Server {
+	s.audit = l
+	return s
 }
 
 // ShouldRateLimit checks all descriptors; one over-limit descriptor rejects the
@@ -41,6 +49,16 @@ func (s *Server) ShouldRateLimit(_ context.Context, req *ratelimitv3.RateLimitRe
 		}
 		allowed, layer := s.policy.Allow(tenant, tool)
 		if !allowed {
+			if s.audit != nil {
+				s.audit.Emit(audit.Event{
+					Tenant:   tenant,
+					Consumer: tenant,
+					Tool:     tool,
+					Decision: "rate_limited",
+					Layer:    layer,
+					Status:   "over_limit",
+				})
+			}
 			body, _ := json.Marshal(map[string]any{
 				"jsonrpc": "2.0",
 				"error": map[string]any{

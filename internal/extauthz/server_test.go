@@ -1,15 +1,18 @@
 package extauthz
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"testing"
 
 	authv3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"google.golang.org/grpc/codes"
 
+	"dual-era-mcp-gateway/internal/audit"
 	"dual-era-mcp-gateway/internal/policy"
 )
 
@@ -92,6 +95,23 @@ func TestCheckForbidden(t *testing.T) {
 	}
 	if resp.GetDeniedResponse().GetStatus().GetCode() != http.StatusForbidden {
 		t.Fatalf("http status = %+v", resp.GetDeniedResponse().GetStatus())
+	}
+}
+
+func TestAuditEvent(t *testing.T) {
+	var buf bytes.Buffer
+	s := New(testPolicy(t)).WithAudit(audit.New(&buf))
+	_, _ = s.Check(context.Background(), checkRequest(map[string]string{
+		"authorization": "Bearer acme-key",
+		"mcp-name":      "weather__get_weather",
+		"mcp-method":    "tools/call",
+	}))
+	var event map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &event); err != nil {
+		t.Fatalf("audit json: %v", err)
+	}
+	if event["decision"] != "allow" || event["tenant"] != "acme" {
+		t.Fatalf("event = %+v", event)
 	}
 }
 

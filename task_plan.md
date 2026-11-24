@@ -352,8 +352,8 @@ MVP 代码级完成：
 | F-03 | 策略指标 | P0 | D-06 | authz/ratelimit | `[~]` facade 计数器；无 gRPC 指标 |
 | F-04 | 结构化日志 | P0 | C-01 | JSON/字段稳定 | `[~]` JSON logger 库；`cmd/gateway` 仍用 log |
 | F-05 | Trace | P0 | C-14 | Tempo/Jaeger | `[~]` trace id 传播；无 OTel |
-| F-06 | Grafana 看板 | P0 | F-01..F-03 | 四块看板 | `[ ]` |
-| F-07 | 告警规则 | P0 | F-01 | NACK/5xx/429/Redis/证书 | `[ ]` |
+| F-06 | Grafana 看板 | P0 | F-01..F-03 | 四块看板 | `[~]` starter JSON；未部署 |
+| F-07 | 告警规则 | P0 | F-01 | NACK/5xx/429/Redis/证书 | `[~]` 4 条 starter 规则；未接 Prometheus |
 | F-08 | Runbook | P0 | C-11 | 启动/变更/故障/回滚 | `[x]` `docs/runbook.md` |
 | F-09 | kind + Helm | P0 | C-05 | 5 分钟起 | `[~]` Helm 骨架；无 kind/集群验证 |
 | F-10 | docker-compose | P1 | C-05 | 本地一键 | `[x]` T8 compose；本机 Docker 不可用 |
@@ -401,6 +401,9 @@ MVP 代码级完成：
 | modern MCP client | `ListTools`/`Call`/`Discover` + headers/meta | `internal/modernclient` 单测；`cmd/gateway -modern` |
 | trace 传播 | `X-Trace-Id`/traceparent 到 legacy upstream | `internal/legacy` 测试 |
 | ADR/runbook/demo | 7 篇 ADR、runbook、5 分钟 demo、k6 脚本 | `docs/adr`, `docs/runbook.md`, `docs/demo.md`, `scripts/k6` |
+| audit | JSONL auth/rate-limit events + drop counter | `internal/audit` 单测 |
+| dry-run | config diff API | `controlplane.DiffConfigs` + `/api/v1/dry-run` |
+| dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 
 仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。
 

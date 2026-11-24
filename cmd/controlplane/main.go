@@ -78,6 +78,23 @@ func main() {
 		w.Header().Set("Content-Type", "text/yaml")
 		_, _ = w.Write([]byte(out))
 	})
+	mux.HandleFunc("/api/v1/dry-run", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var next controlplane.Config
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&next); err != nil {
+			http.Error(w, "bad json", http.StatusBadRequest)
+			return
+		}
+		if err := controlplane.Validate(next); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		writeJSON(w, http.StatusOK, controlplane.DiffConfigs(mgr.Current().Config, next))
+	})
+
 	mux.HandleFunc("/api/v1/apply", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

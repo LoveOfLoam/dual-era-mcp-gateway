@@ -1,0 +1,34 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Gateway requests / errors",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "rate(mcp_gateway_requests_total[5m])", "legendFormat": "requests"},
+        {"expr": "rate(mcp_gateway_errors_total[5m])", "legendFormat": "5xx"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Auth denied / rate limited",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {"expr": "rate(mcp_gateway_auth_denied_total[5m])", "legendFormat": "auth denied"},
+        {"expr": "rate(mcp_gateway_rate_limited_total[5m])", "legendFormat": "rate limited"}
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "In-flight",
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 8},
+      "targets": [{"expr": "mcp_gateway_inflight_requests", "legendFormat": "in-flight"}]
+    }
+  ],
+  "schemaVersion": 39,
+  "title": "dual-era MCP gateway",
+  "uid": "dual-era-mcp",
+  "version": 1
+}

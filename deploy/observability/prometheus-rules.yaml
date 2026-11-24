@@ -1,0 +1,31 @@
+groups:
+  - name: dual-era-mcp
+    rules:
+      - alert: McpGatewayHigh5xx
+        expr: rate(mcp_gateway_errors_total[5m]) > 1
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "MCP gateway 5xx rate is elevated"
+          runbook: "docs/runbook.md"
+      - alert: McpGatewayAuthDeniedSpike
+        expr: rate(mcp_gateway_auth_denied_total[5m]) > 10
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "Auth-denied rate is elevated"
+          runbook: "docs/runbook.md"
+      - alert: McpGatewayRateLimitedSpike
+        expr: rate(mcp_gateway_rate_limited_total[5m]) > 10
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "Rate-limited rate is elevated"
+          runbook: "docs/runbook.md"
+      - alert: McpGatewayDown
+        expr: up{job="dual-era-mcp"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: "MCP gateway target is down"
+          runbook: "docs/runbook.md"

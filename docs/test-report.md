@@ -39,6 +39,7 @@ powershell -File scripts/test.ps1
 | `internal/extauthz` | PASS |
 | `internal/ratelimit` | PASS |
 | `internal/modernclient` | PASS |
+| `internal/audit` | PASS |
 | `internal/obs` | PASS |
 | `internal/xds` | PASS (ADS CDS/RDS/LDS + ACK/NACK) |
 | `test/boundary` | PASS |
@@ -50,6 +51,7 @@ powershell -File scripts/test.ps1
 | Package | Coverage |
 |---|---:|
 | `internal/controlplane` | 90.4% |
+| `internal/audit` | 90.9% |
 | `internal/envoy` | 94.4% |
 | `internal/extauthz` | 93.5% |
 | `internal/ratelimit` | 92.9% |

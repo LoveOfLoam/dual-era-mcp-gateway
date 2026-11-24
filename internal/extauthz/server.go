@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"dual-era-mcp-gateway/internal/audit"
 	"dual-era-mcp-gateway/internal/policy"
 )
 
@@ -20,11 +21,18 @@ import (
 type Server struct {
 	authv3.UnimplementedAuthorizationServer
 	policy *policy.Engine
+	audit  *audit.Logger
 }
 
 // New creates an ext_authz server.
 func New(engine *policy.Engine) *Server {
 	return &Server{policy: engine}
+}
+
+// WithAudit enables JSONL audit events.
+func (s *Server) WithAudit(l *audit.Logger) *Server {
+	s.audit = l
+	return s
 }
 
 // Check authorizes one request. It reads the tool from Mcp-Name (or
@@ -36,19 +44,37 @@ func (s *Server) Check(_ context.Context, req *authv3.CheckRequest) (*authv3.Che
 		key = headers["x-api-key"]
 	}
 	tenant, err := s.policy.AuthenticateKey(key)
-	if err != nil {
-		return denied(http.StatusUnauthorized, codes.Unauthenticated, "unauthenticated"), nil
-	}
 	tool := headers["mcp-name"]
 	if tool == "" {
 		tool = headers["x-mcp-name"]
 	}
+	if err != nil {
+		s.emit(headers, tenant, tool, "deny", "unauthenticated")
+		return denied(http.StatusUnauthorized, codes.Unauthenticated, "unauthenticated"), nil
+	}
 	if tool != "" {
 		if err := s.policy.Authorize(tenant, tool); err != nil {
+			s.emit(headers, tenant, tool, "deny", "forbidden")
 			return denied(http.StatusForbidden, codes.PermissionDenied, "tool not allowed"), nil
 		}
 	}
+	s.emit(headers, tenant, tool, "allow", "ok")
 	return allowed(tenant), nil
+}
+
+func (s *Server) emit(headers map[string]string, tenant, tool, decision, status string) {
+	if s.audit == nil {
+		return
+	}
+	s.audit.Emit(audit.Event{
+		TraceID:  headers["x-trace-id"],
+		Tenant:   tenant,
+		Consumer: tenant,
+		Tool:     tool,
+		Method:   headers["mcp-method"],
+		Decision: decision,
+		Status:   status,
+	})
 }
 
 func requestHeaders(req *authv3.CheckRequest) map[string]string {

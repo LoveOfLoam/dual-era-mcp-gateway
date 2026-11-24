@@ -178,6 +178,7 @@ scripts/            # test/bench/helm/envoy/t8 PowerShell scripts
 deploy/envoy/       # bootstrap for validation
 deploy/t8/          # Docker/Envoy T8 harness
 deploy/helm/dual-era # Helm skeleton
+deploy/observability # starter Grafana dashboard + Prometheus rules
 docs/benchmarks/    # microbenchmark reports
 docs/adr/           # ADR-001..007
 docs/runbook.md     # operations runbook
@@ -204,7 +205,8 @@ Implemented:
 - T8 Docker/Envoy harness and Helm skeleton;
 - 2026-07-28 modern MCP client + `cmd/gateway -modern`;
 - in-process facade microbenchmarks;
-- ADR-001..007, runbook, demo, k6 script;
+- JSONL audit events, dry-run config diff;
+- ADR-001..007, runbook, demo, k6 script, starter Grafana/Prometheus assets;
 - boundary tests T0–T7 + ADS streaming tests.
 
 Not implemented / not verified:

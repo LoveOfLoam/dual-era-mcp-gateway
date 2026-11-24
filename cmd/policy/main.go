@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
+	"dual-era-mcp-gateway/internal/audit"
 	"dual-era-mcp-gateway/internal/extauthz"
 	"dual-era-mcp-gateway/internal/policy"
 	"dual-era-mcp-gateway/internal/ratelimit"
@@ -43,12 +44,14 @@ func main() {
 		log.Fatalf("ratelimit listen: %v", err)
 	}
 
+	auditLog := audit.New(os.Stdout)
+
 	authzSrv := grpc.NewServer()
-	authv3.RegisterAuthorizationServer(authzSrv, extauthz.New(engine))
+	authv3.RegisterAuthorizationServer(authzSrv, extauthz.New(engine).WithAudit(auditLog))
 	healthpb.RegisterHealthServer(authzSrv, health.NewServer())
 
 	rlSrv := grpc.NewServer()
-	ratelimitv3.RegisterRateLimitServiceServer(rlSrv, ratelimit.New(engine))
+	ratelimitv3.RegisterRateLimitServiceServer(rlSrv, ratelimit.New(engine).WithAudit(auditLog))
 	healthpb.RegisterHealthServer(rlSrv, health.NewServer())
 
 	go func() {
