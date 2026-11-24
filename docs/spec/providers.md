@@ -28,20 +28,18 @@ type Provider interface {
 - Limitations: no full `$ref` resolution in MVP; no callbacks; no complex content types.
 - Generated `SourceSpec` type `rest`.
 
-## 4. K8s provider (Phase 2)
+## 4. K8s provider (MVP: manifest; Phase 2: informer)
 
-- Reads ConfigMaps/CRDs:
-  - `McpSource` CRD or ConfigMap with `SourceSpec`.
-  - `McpPolicy` CRD.
-- Watch via informer; emits `[]SourceSpec`.
-- No controller code in MVP.
+- Implemented: `K8sManifestProvider` reads a ConfigMap (`data["sources.yaml"]` or `data["sources"]`) or a direct `McpSource`-style `spec.sources`.
+- This covers GitOps exports, `kubectl get cm -o yaml`, and test fixtures without client-go.
+- Phase 2: live informer/CRD controller; policies as CRDs.
+- `Watch` currently closes on context cancellation; an informer will emit snapshots through the same interface.
 
-## 5. Nacos provider (Phase 2)
+## 5. Nacos provider (MVP: Config Service; Phase 2: discovery)
 
-- Reads config from Nacos.
-- Service discovery for `host:port` of native MCP/REST services.
-- Watch via long polling.
-- No Nacos client in MVP.
+- Implemented: `NacosProvider` calls `/nacos/v1/cs/configs` with `dataId`, `group`, `tenant`, parses `sources:`, and validates.
+- `Watch` polls every 30s and emits when the parsed snapshot changes.
+- Phase 2: Nacos service discovery to resolve `host:port` for native MCP/REST services.
 
 ## 6. Reload semantics
 
@@ -65,5 +63,7 @@ We do not copy Higress CRDs; we keep a smaller `SourceSpec` model.
 
 - Static provider load/validate/reload.
 - OpenAPI provider generates expected tools/schemas.
+- K8s ConfigMap/McpSource manifest load and missing-data rejection.
+- Nacos Config Service query/parse/error status.
 - Invalid provider output rejected; old snapshot remains.
 - Provider interface fake used by control-plane tests.

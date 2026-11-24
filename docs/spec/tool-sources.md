@@ -58,14 +58,16 @@ type ToolSource interface {
 
 ### Simple REST (MVP)
 
-- Use Envoy `mcp_json_rest_bridge` on an internal listener.
-- It becomes an MCP backend for `mcp_router`.
-- Supports 2026-07-28 `_meta`, `server/discover`, `ttlMs/cacheScope`, `Mcp-Param-*`.
-- Map: HTTP method/path/query/body ↔ tool arguments.
+Two implementations share the same `SourceSpec`:
+
+- Envoy `mcp_json_rest_bridge` on an internal listener, aggregated by `mcp_router`.
+- Go `internal/restadapter`, which implements `legacy.Client` and maps path/query/JSON body arguments. It is useful when Envoy's bridge mapping is too narrow or when running the local `cmd/gateway`.
+
+Both are normalized to MCP tools; the upper layers do not branch on REST vs MCP.
 
 ### Complex REST (Phase 2)
 
-Implement `restAdapter` as a Go MCP backend:
+Extend `restAdapter` with:
 
 - OAuth client credentials / token exchange
 - HMAC signing
@@ -97,3 +99,4 @@ Implement `restAdapter` as a Go MCP backend:
 - T5: provider reload adds/removes source.
 - T5: collision rejected.
 - T6: single-source prefix stable.
+- `restadapter`: GET path/query, POST JSON body, unknown tool, upstream 5xx.
