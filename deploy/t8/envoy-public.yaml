@@ -129,7 +129,15 @@ static_resources:
     - name: modern_gateway
       type: STRICT_DNS
       dns_lookup_family: V4_ONLY
+      dns_refresh_rate: 1s
       connect_timeout: 1s
+      health_checks:
+        - timeout: 1s
+          interval: 1s
+          unhealthy_threshold: 1
+          healthy_threshold: 2
+          http_health_check:
+            path: /healthz
       circuit_breakers:
         thresholds:
           - priority: DEFAULT

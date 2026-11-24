@@ -65,3 +65,20 @@ func TestHealth(t *testing.T) {
 		t.Fatalf("health = %+v", out)
 	}
 }
+
+func TestHealthDraining(t *testing.T) {
+	s := New(marker("legacy"), marker("modern"))
+	s.SetDraining(true)
+	rec := httptest.NewRecorder()
+	s.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	var out map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatalf("health json: %v", err)
+	}
+	if out["status"] != "draining" {
+		t.Fatalf("health = %+v", out)
+	}
+}

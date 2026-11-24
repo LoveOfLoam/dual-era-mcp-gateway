@@ -61,7 +61,10 @@ func main() {
 	}
 	modernHandler := facade.New(facadeCfg, router)
 
-	handler := metrics.Wrap(obs.TraceMiddleware(edge.NewWithMetrics(legacyHandler, modernHandler, metrics.Handler())))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	edgeHandler := edge.NewWithMetrics(legacyHandler, modernHandler, metrics.Handler())
+	handler := metrics.Wrap(obs.TraceMiddleware(edgeHandler))
 	srv := &http.Server{
 		Addr:              *addr,
 		Handler:           handler,
@@ -71,10 +74,12 @@ func main() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	go func() {
 		<-ctx.Done()
+		// Let Envoy's active health check eject this instance before closing
+		// listener connections, avoiding 503s on a rolling replica stop.
+		edgeHandler.SetDraining(true)
+		time.Sleep(6 * time.Second)
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)

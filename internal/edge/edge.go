@@ -6,14 +6,20 @@ package edge
 import (
 	"encoding/json"
 	"net/http"
+	"sync/atomic"
 )
 
 // Server dispatches /mcp and /modern/mcp.
 type Server struct {
-	legacy  http.Handler
-	modern  http.Handler
-	metrics http.Handler
+	legacy   http.Handler
+	modern   http.Handler
+	metrics  http.Handler
+	draining atomic.Bool
 }
+
+// SetDraining makes /healthz return 503 so a load balancer can eject this
+// instance before shutdown.
+func (s *Server) SetDraining(v bool) { s.draining.Store(v) }
 
 // New creates an edge dispatcher.
 func New(legacy, modern http.Handler) *Server {
@@ -40,6 +46,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.metrics.ServeHTTP(w, r)
 	case "/healthz", "/readyz":
 		w.Header().Set("Content-Type", "application/json")
+		if s.draining.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "draining"})
+			return
+		}
 		_ = json.NewEncoder(w).Encode(map[string]any{"status": "ok"})
 	default:
 		http.NotFound(w, r)
