@@ -3,6 +3,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# `go test` must run for the host OS/arch; a stale cross-compile env makes
+# Windows try to execute Linux test binaries.
+$hostOS = (go env GOHOSTOS)
+if ($env:GOOS -and $env:GOOS -ne $hostOS) {
+    Write-Warning "Clearing GOOS=$env:GOOS for host test run ($hostOS)."
+    Remove-Item Env:GOOS -ErrorAction SilentlyContinue
+    Remove-Item Env:GOARCH -ErrorAction SilentlyContinue
+}
 if (-not $env:GOCACHE) {
     $env:GOCACHE = Join-Path $env:TEMP "gocache-dual-era"
     New-Item -ItemType Directory -Force -Path $env:GOCACHE | Out-Null
