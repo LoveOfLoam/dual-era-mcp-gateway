@@ -1,0 +1,25 @@
+# binaries
+*.exe
+*.dll
+*.so
+/bin/
+/dist/
+
+# test artifacts
+coverage.out
+coverage.html
+*.test
+/test-results/
+spike/results/
+
+# local
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+
+# editor
+.idea/
+.vscode/
+*.swp

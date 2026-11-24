@@ -1,0 +1,58 @@
+# SourceSpec config example (MVP, file-based; not a K8s CRD yet)
+apiVersion: dual-era.example/v1alpha1
+kind: GatewayConfig
+metadata:
+  name: dual-era
+spec:
+  gateway:
+    publicPort: 8443
+    modernPath: /modern/mcp
+    legacyPath: /mcp
+    internalLegacyPort: 10001
+    allowedOrigins:
+      - http://localhost:3000
+      - http://127.0.0.1:3000
+  providers:
+    - name: static
+      type: static
+      file: ./config/sources.yaml
+    - name: crm-openapi
+      type: openapi
+      file: ./config/openapi/crm.yaml
+  sources:
+    - name: weather
+      type: mcp
+      protocol: legacy
+      endpoint: http://weather:8080/mcp
+      prefix: weather
+      tools:
+        include: ["get_weather", "list_cities"]
+    - name: orders
+      type: mcp
+      protocol: legacy
+      endpoint: http://orders:8080/mcp
+      prefix: orders
+      tools:
+        include: ["create_order", "get_order"]
+    - name: crm
+      type: rest
+      baseURL: https://crm.example.com
+      prefix: crm
+      openapi: ./config/openapi/crm.yaml
+  consumers:
+    - name: acme
+      tenant: acme
+      apiKeys:
+        - name: prod
+          sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      allow:
+        - source: weather
+          tools: ["*"]
+        - source: crm
+          tools: ["get_customer"]
+  rateLimits:
+    - tenant: acme
+      source: weather
+      tool: get_weather
+      rpm: 60
+      burst: 10
