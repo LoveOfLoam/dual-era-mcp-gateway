@@ -299,7 +299,7 @@ MVP 代码级完成：
 | C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[~]` TLS overlay + dev cert 脚本；未运行 |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
 | C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[ ]` |
-| C-08 | retry/outlier/circuit | P0 | C-06 | 故障注入 | `[ ]` |
+| C-08 | retry/outlier/circuit | P0 | C-06 | 故障注入 | `[~]` public cluster/route 配置；未运行故障注入 |
 | C-09 | body/header 限制 | P0 | C-03 | 413/431 | `[~]` body 只有 facade |
 | C-10 | Origin 校验 | P0 | C-03 | 非法 403 | `[x]` facade |
 | C-11 | 零停机 LDS/CDS | P0 | C-06 | 100 次变更 + SSE | `[ ]` |
@@ -348,7 +348,7 @@ MVP 代码级完成：
 | ID | 任务 | 优先级 | 依赖 | 验收 | 状态 |
 |---|---|---|---|---|---|
 | F-01 | 控制面指标 | P0 | B-09 | Prometheus | `[x]` 本地 `/metrics` 计数器；无控制面历史指标 |
-| F-02 | Envoy 指标 | P0 | C-01 | QPS/latency/5xx | `[ ]` |
+| F-02 | Envoy 指标 | P0 | C-01 | QPS/latency/5xx | `[~]` admin `/stats/prometheus` + scrape 配置；未部署 |
 | F-03 | 策略指标 | P0 | D-06 | authz/ratelimit | `[~]` facade 计数器；无 gRPC 指标 |
 | F-04 | 结构化日志 | P0 | C-01 | JSON/字段稳定 | `[~]` JSON logger 库；`cmd/gateway` 仍用 log |
 | F-05 | Trace | P0 | C-14 | Tempo/Jaeger | `[~]` trace id 传播；无 OTel |
@@ -377,7 +377,7 @@ MVP 代码级完成：
 | G-10 | AC-01..AC-30 | P0 | T0..T8 | 全部通过或有明确 skip | `[~]` 子集 |
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
 | G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` facade 微基准 + k6 脚本；未实跑 |
-| G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` 5xx/并发/body 限制；无 kill/Redis/NACK |
+| G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` 5xx/并发/body 测试 + `docs/chaos.md` 矩阵；无运行时注入 |
 | G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` API key/allowlist/Origin/SSRF allowlist/body |
 | G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[x]` `docs/demo.md`；未录视频 |
 | G-16 | ADR-001..007 | P1 | A-05 | 3 篇以上 | `[x]` 7 篇 |
@@ -437,7 +437,7 @@ MVP 代码级完成：
 | W4 | 策略面 | `[~]` ext_authz/ratelimit 服务已做；Redis/TLS/Envoy 运行时未验 |
 | W5 | 2026-07-28 + REST | `[~]` facade/REST adapter；Envoy conformance 未做 |
 | W6 | 零停机 | `[ ]` |
-| W7 | 可观测/安全/混沌 | `[ ]` |
+| W7 | 可观测/安全/混沌 | `[~]` metrics/trace/审计/扫描脚本/chaos 矩阵；未部署/未注入 |
 | W8 | 收尾/demo | `[~]` README/test report；demo/ADR 未完成 |
 
 ---

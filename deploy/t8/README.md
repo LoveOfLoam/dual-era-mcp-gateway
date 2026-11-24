@@ -45,6 +45,10 @@ powershell -File scripts/t8.ps1
 - There is an **optional TLS overlay** (`docker-compose.tls.yml` +
   `envoy-public-tls.yaml`) and `scripts/gen-dev-cert.ps1`. It is a config
   artifact; this environment has neither Docker nor Envoy to validate it.
+- Public routes/clusters include conservative retry (`reset,connect-failure`),
+  circuit-breaker and outlier-detection settings. They are not fault-injected
+  or validated here; retrying mutating `tools/call` on 5xx is deliberately not
+  enabled.
 ## Optional TLS overlay
 
 ```powershell
