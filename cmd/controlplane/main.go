@@ -24,6 +24,7 @@ func main() {
 	addr := flag.String("addr", ":18080", "listen address")
 	xdsAddr := flag.String("xds-addr", ":18000", "xDS gRPC listen address")
 	configPath := flag.String("config", "", "optional controlplane.Config JSON file")
+	testInvalid := flag.Bool("test-invalid", false, "enable /api/v1/inject-invalid (T8 NACK harness only)")
 	flag.Parse()
 
 	cfg := demoConfig()
@@ -117,6 +118,20 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"version": snap.Version})
 	})
+	if *testInvalid {
+		mux.HandleFunc("/api/v1/inject-invalid", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			version := fmt.Sprintf("invalid-%d", time.Now().UnixNano())
+			if err := xdsSrv.InjectInvalid(r.Context(), version); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{"version": version})
+		})
+	}
 	mux.HandleFunc("/api/v1/audit", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, mgr.Audit())
 	})

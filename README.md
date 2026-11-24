@@ -146,7 +146,7 @@ Current status (2026-11-25):
 - `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
 - `scripts/t8.ps1`: **PASS** with `envoyproxy/envoy:v1.40.2` on Docker Desktop.
   `scripts/t8-mtls.ps1`: **PASS** (client certificate required);
-  `scripts/t8-xds.ps1`: **PASS** (100 LDS/CDS/RDS churns, 0 errors).
+  `scripts/t8-xds.ps1`: **PASS** (100 LDS/CDS/RDS churns, 0 errors, NACK + recovery).
   See [`docs/t8-report.md`](docs/t8-report.md). HTTP and `-TLS` overlays both PASS;
   TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`), the REST
   bridge is aggregated as `rest__*`, and ratelimit uses Redis

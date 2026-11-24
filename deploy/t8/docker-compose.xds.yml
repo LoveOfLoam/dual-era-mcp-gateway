@@ -6,7 +6,7 @@ services:
       dockerfile: deploy/t8/Dockerfile.prebuilt
     entrypoint: ["/controlplane"]
     command:
-      ["-addr", ":18080", "-xds-addr", ":18000", "-config", "/config/xds-config.json"]
+      ["-addr", ":18080", "-xds-addr", ":18000", "-config", "/config/xds-config.json", "-test-invalid"]
     volumes:
       - ./xds-config.json:/config/xds-config.json:ro
     environment:

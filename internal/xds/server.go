@@ -15,8 +15,11 @@ import (
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cachev3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	serverv3 "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -34,6 +37,7 @@ type Server struct {
 
 	mu      sync.RWMutex
 	version string
+	lastCfg controlplane.Config
 	grpc    *grpc.Server
 }
 
@@ -69,7 +73,42 @@ func (s *Server) Apply(ctx context.Context, version string, cfg controlplane.Con
 	}
 	s.mu.Lock()
 	s.version = version
+	s.lastCfg = cfg
 	s.mu.Unlock()
+	return nil
+}
+
+// InjectInvalid publishes an LDS resource with an unknown network filter. Envoy
+// must NACK it and keep the previous good listener. It is used by the T8 NACK
+// harness and is not called in normal operation.
+func (s *Server) InjectInvalid(ctx context.Context, version string) error {
+	s.mu.RLock()
+	cfg := s.lastCfg
+	s.mu.RUnlock()
+	resources, err := buildResources(cfg)
+	if err != nil {
+		return err
+	}
+	invalid := &listener.Listener{
+		Name: "public",
+		Address: &core.Address{Address: &core.Address_SocketAddress{
+			SocketAddress: &core.SocketAddress{
+				Address:       "0.0.0.0",
+				PortSpecifier: &core.SocketAddress_PortValue{PortValue: publicListenerPort},
+			},
+		}},
+		FilterChains: []*listener.FilterChain{{
+			Filters: []*listener.Filter{{Name: "envoy.filters.network.definitely_invalid"}},
+		}},
+	}
+	resources[resource.ListenerType] = []types.Resource{invalid}
+	snap, err := cachev3.NewSnapshot(version, resources)
+	if err != nil {
+		return fmt.Errorf("xds invalid snapshot: %w", err)
+	}
+	if err := s.cache.SetSnapshot(ctx, s.node, snap); err != nil {
+		return fmt.Errorf("xds invalid set snapshot: %w", err)
+	}
 	return nil
 }
 

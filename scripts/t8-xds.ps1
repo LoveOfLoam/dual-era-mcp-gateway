@@ -95,7 +95,22 @@ try {
     Write-Host "xDS ACKs before=$ackBefore after=$ackAfter changes=$Changes"
     if ($ackAfter -le $ackBefore) { throw "xDS did not ACK the updates" }
 
-    Write-Host "T8 XDS PASS: CDS/RDS updates applied with live load"
+    $nackBefore = (Invoke-RestMethod "http://127.0.0.1:18080/metrics" -UseBasicParsing) | Select-String 'mcp_controlplane_xds_nack_total (\d+)'
+    $nackBefore = if ($nackBefore.Matches.Count -gt 0) { [int]$nackBefore.Matches[0].Groups[1].Value } else { 0 }
+    Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:18080/api/v1/inject-invalid" | Out-Null
+    Start-Sleep -Seconds 2
+    $nackAfter = (Invoke-RestMethod "http://127.0.0.1:18080/metrics" -UseBasicParsing) | Select-String 'mcp_controlplane_xds_nack_total (\d+)'
+    $nackAfter = if ($nackAfter.Matches.Count -gt 0) { [int]$nackAfter.Matches[0].Groups[1].Value } else { 0 }
+    Write-Host "xDS NACKs before=$nackBefore after=$nackAfter"
+    if ($nackAfter -le $nackBefore) { throw "Envoy did not NACK the invalid listener" }
+
+    Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:18080/api/v1/apply" -ContentType "application/json" -Body $jsonA | Out-Null
+    Start-Sleep -Seconds 2
+    $code = & curl.exe -sS -o NUL -w "%{http_code}" -X POST "http://127.0.0.1:8443/mcp" -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" --data-binary "@$initFile" 2>&1
+    Write-Host "xDS recovery initialize: status=$code"
+    if ([int]$code -ne 200) { throw "listener did not recover after NACK" }
+
+    Write-Host "T8 XDS PASS: LDS/CDS/RDS churn, ACK, NACK and recovery"
 } catch {
     Write-Host "T8 XDS FAIL: $($_.Exception.Message)"
     exit 1
