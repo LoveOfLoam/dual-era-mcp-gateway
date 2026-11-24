@@ -304,7 +304,7 @@ MVP 代码级完成：
 | C-10 | Origin 校验 | P0 | C-03 | 非法 403 | `[x]` facade |
 | C-11 | 零停机 LDS/CDS | P0 | C-06 | 100 次变更 + SSE | `[ ]` |
 | C-12 | 优雅 drain | P0 | C-01 | 滚动更新 | `[ ]` |
-| C-13 | Access log JSON | P0 | C-01 | 字段稳定 | `[ ]` |
+| C-13 | Access log JSON | P0 | C-01 | 字段稳定 | `[~]` T8 Envoy JSON access log 配置；未运行 |
 | C-14 | OTel Trace | P0 | C-01 | traceparent 传播 | `[~]` X-Trace-Id/traceparent；无 OTel exporter |
 
 ### WS-D 策略面
