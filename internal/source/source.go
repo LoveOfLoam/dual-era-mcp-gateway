@@ -38,6 +38,17 @@ func (t ToolSpec) SchemaJSON() json.RawMessage {
 	return raw
 }
 
+// AuthSpec is a REST upstream authentication mode.
+type AuthSpec struct {
+	Type         string   `json:"type" yaml:"type"` // oauth2 | hmac
+	TokenURL     string   `json:"tokenURL,omitempty" yaml:"tokenURL,omitempty"`
+	ClientID     string   `json:"clientID,omitempty" yaml:"clientID,omitempty"`
+	ClientSecret string   `json:"clientSecret,omitempty" yaml:"clientSecret,omitempty"`
+	Scopes       []string `json:"scopes,omitempty" yaml:"scopes,omitempty"`
+	Secret       string   `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Header       string   `json:"header,omitempty" yaml:"header,omitempty"`
+}
+
 // SourceSpec is the normalized source definition produced by a Provider.
 type SourceSpec struct {
 	Name         string            `json:"name" yaml:"name"`
@@ -49,6 +60,7 @@ type SourceSpec struct {
 	OpenAPI      string            `json:"openapi,omitempty" yaml:"openapi,omitempty"`
 	Headers      map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	AllowedHosts []string          `json:"allowedHosts,omitempty" yaml:"allowedHosts,omitempty"`
+	Auth         *AuthSpec         `json:"auth,omitempty" yaml:"auth,omitempty"`
 	Tools        []ToolSpec        `json:"tools,omitempty" yaml:"tools,omitempty"`
 }
 
@@ -101,6 +113,20 @@ func Validate(specs []SourceSpec) error {
 			}
 		default:
 			return fmt.Errorf("source %q: unknown type %q", s.Name, s.Type)
+		}
+		if s.Auth != nil {
+			switch s.Auth.Type {
+			case "oauth2":
+				if s.Auth.TokenURL == "" || s.Auth.ClientID == "" || s.Auth.ClientSecret == "" {
+					return fmt.Errorf("source %q: oauth2 requires tokenURL/clientID/clientSecret", s.Name)
+				}
+			case "hmac":
+				if s.Auth.Secret == "" || s.Auth.Header == "" {
+					return fmt.Errorf("source %q: hmac requires secret/header", s.Name)
+				}
+			default:
+				return fmt.Errorf("source %q: unsupported auth type %q", s.Name, s.Auth.Type)
+			}
 		}
 		tools := map[string]bool{}
 		for _, t := range s.Tools {

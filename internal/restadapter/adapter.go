@@ -5,6 +5,9 @@ package restadapter
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +16,9 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 
 	"dual-era-mcp-gateway/internal/mcp"
 	"dual-era-mcp-gateway/internal/registry"
@@ -23,10 +29,11 @@ var pathParamRE = regexp.MustCompile(`\{([^}]+)\}`)
 
 // Adapter implements legacy.Client for one REST source.
 type Adapter struct {
-	spec  source.SourceSpec
-	base  *url.URL
-	tools map[string]source.ToolSpec
-	http  *http.Client
+	spec        source.SourceSpec
+	base        *url.URL
+	tools       map[string]source.ToolSpec
+	http        *http.Client
+	tokenSource oauth2.TokenSource
 }
 
 // New creates an adapter. A nil client gets a 15s timeout.
@@ -47,11 +54,33 @@ func New(spec source.SourceSpec, client *http.Client) (*Adapter, error) {
 	if client == nil {
 		client = &http.Client{Timeout: 15 * time.Second}
 	}
+	var tokenSource oauth2.TokenSource
+	if spec.Auth != nil {
+		switch spec.Auth.Type {
+		case "oauth2":
+			if spec.Auth.TokenURL == "" || spec.Auth.ClientID == "" || spec.Auth.ClientSecret == "" {
+				return nil, fmt.Errorf("restadapter: oauth2 requires tokenURL/clientID/clientSecret")
+			}
+			cfg := clientcredentials.Config{
+				ClientID:     spec.Auth.ClientID,
+				ClientSecret: spec.Auth.ClientSecret,
+				TokenURL:     spec.Auth.TokenURL,
+				Scopes:       spec.Auth.Scopes,
+			}
+			tokenSource = cfg.TokenSource(context.Background())
+		case "hmac":
+			if spec.Auth.Secret == "" || spec.Auth.Header == "" {
+				return nil, fmt.Errorf("restadapter: hmac requires secret/header")
+			}
+		default:
+			return nil, fmt.Errorf("restadapter: unsupported auth type %q", spec.Auth.Type)
+		}
+	}
 	tools := make(map[string]source.ToolSpec, len(spec.Tools))
 	for _, t := range spec.Tools {
 		tools[t.Name] = t
 	}
-	return &Adapter{spec: spec, base: base, tools: tools, http: client}, nil
+	return &Adapter{spec: spec, base: base, tools: tools, http: client, tokenSource: tokenSource}, nil
 }
 
 // ListTools returns unprefixed tools; the aggregator applies `source__tool`.
@@ -111,6 +140,7 @@ func (a *Adapter) Call(ctx context.Context, name string, args json.RawMessage) (
 		method = http.MethodGet
 	}
 	var body io.Reader
+	var bodyBytes []byte
 	if method == http.MethodGet || method == http.MethodDelete {
 		q := u.Query()
 		for k, v := range values {
@@ -118,8 +148,8 @@ func (a *Adapter) Call(ctx context.Context, name string, args json.RawMessage) (
 		}
 		u.RawQuery = q.Encode()
 	} else if len(values) > 0 {
-		raw, _ := json.Marshal(values)
-		body = bytes.NewReader(raw)
+		bodyBytes, _ = json.Marshal(values)
+		body = bytes.NewReader(bodyBytes)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, u.String(), body)
@@ -132,6 +162,18 @@ func (a *Adapter) Call(ctx context.Context, name string, args json.RawMessage) (
 	req.Header.Set("Accept", "application/json")
 	for k, v := range a.spec.Headers {
 		req.Header.Set(k, v)
+	}
+	if a.tokenSource != nil {
+		tok, err := a.tokenSource.Token()
+		if err != nil {
+			return mcp.Response{}, fmt.Errorf("restadapter: oauth2 token: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+tok.AccessToken)
+	}
+	if a.spec.Auth != nil && a.spec.Auth.Type == "hmac" {
+		mac := hmac.New(sha256.New, []byte(a.spec.Auth.Secret))
+		mac.Write(bodyBytes)
+		req.Header.Set(a.spec.Auth.Header, hex.EncodeToString(mac.Sum(nil)))
 	}
 	resp, err := a.http.Do(req)
 	if err != nil {

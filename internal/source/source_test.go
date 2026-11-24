@@ -86,6 +86,25 @@ func TestValidateRejectsMissingFields(t *testing.T) {
 	}
 }
 
+func TestValidateAuth(t *testing.T) {
+	base := SourceSpec{Name: "a", Type: TypeMCP, Endpoint: "http://a:8080/mcp", Prefix: "a"}
+	badOAuth := base
+	badOAuth.Auth = &AuthSpec{Type: "oauth2"}
+	if err := Validate([]SourceSpec{badOAuth}); err == nil {
+		t.Fatal("expected oauth2 validation error")
+	}
+	badHMAC := base
+	badHMAC.Auth = &AuthSpec{Type: "hmac"}
+	if err := Validate([]SourceSpec{badHMAC}); err == nil {
+		t.Fatal("expected hmac validation error")
+	}
+	good := base
+	good.Auth = &AuthSpec{Type: "hmac", Secret: "s", Header: "X-Signature"}
+	if err := Validate([]SourceSpec{good}); err != nil {
+		t.Fatalf("good auth: %v", err)
+	}
+}
+
 func TestOpenAPIProvider(t *testing.T) {
 	path := writeFile(t, "openapi.json", `{
   "openapi": "3.0.0",

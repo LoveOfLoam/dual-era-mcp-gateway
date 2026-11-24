@@ -15,6 +15,17 @@ go run ./cmd/gateway -addr :8080 `
 
 Health: `GET /healthz`, metrics: `GET /metrics`.
 
+## stdio bridge
+
+```powershell
+go run ./cmd/stdio-bridge -addr :18081 -command "C:\path\to\mcp-server.exe"
+# arguments are comma-separated:
+go run ./cmd/stdio-bridge -addr :18081 -command node -args "server.js,--stdio"
+```
+
+This is a single child process; no process pool or automatic restart yet.
+Expose it to the internal Envoy `mcp_router` as a legacy MCP backend.
+
 ## Control plane
 
 ```powershell

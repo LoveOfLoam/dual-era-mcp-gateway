@@ -153,11 +153,13 @@ cmd/
   controlplane/     # config/version/rollback + generated Envoy config
   policy/           # ext_authz + ratelimit gRPC services
   legacy-mock/      # local legacy MCP server
+  stdio-bridge/     # stdio MCP -> HTTP /mcp bridge
 internal/
   mcp/              # JSON-RPC, _meta, headers, errors
   facade/           # 2026-07-28 endpoint
   legacy/           # legacy HTTP client + session
   modernclient/     # 2026-07-28 stateless MCP client
+  stdio/            # stdio JSON-RPC bridge + HTTP handler
   aggregator/       # multi-source normalization
   registry/         # prefix/sort/collision
   policy/           # API key/tenant/allowlist/rate limit
@@ -193,8 +195,9 @@ Implemented:
 - versioned dual-era endpoints;
 - native MCP + REST tool-source abstraction;
 - legacy and 2026-07-28 native MCP clients;
+- stdio MCP bridge (`cmd/stdio-bridge`);
 - static/OpenAPI/K8s-manifest/Nacos providers;
-- generic REST adapter (path/query/JSON body);
+- generic REST adapter (path/query/JSON body, OAuth2 client credentials, HMAC signatures);
 - tool prefix/sort/collision;
 - API key/tenant/allowlist/rate limit (memory + optional Redis Lua);
 - HS256 JWT validation (RS256/JWKS is Phase 2);
@@ -219,7 +222,7 @@ Not implemented / not verified:
 - TLS/mTLS, SSE long-connection, zero-downtime LDS;
 - live Kubernetes informer / controller / CRDs;
 - Redis production deployment validation (the Redis Lua limiter has miniredis tests); JWT;
-- complex REST adapter (OAuth/HMAC/multipart/long-running);
+- complex REST adapter multipart/long-running (OAuth2/HMAC are implemented);
 - real 500 RPS / k6 / chaos reports;
 - OAuth/OIDC, canary, multi-region.
 

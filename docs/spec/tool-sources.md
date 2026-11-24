@@ -65,16 +65,20 @@ Two implementations share the same `SourceSpec`:
 
 Both are normalized to MCP tools; the upper layers do not branch on REST vs MCP.
 
-### Complex REST (Phase 2)
+### Complex REST (partial)
 
-Extend `restAdapter` with:
+Implemented:
 
-- OAuth client credentials / token exchange
-- HMAC signing
-- multipart/binary
-- long-running jobs
-- complex pagination
-- custom error mapping
+- OAuth2 client credentials (`auth.type: oauth2`);
+- HMAC body signature (`auth.type: hmac`);
+- path/query/JSON body (existing).
+
+Still Phase 2:
+
+- multipart/binary;
+- long-running jobs/polling;
+- complex pagination;
+- custom error mapping.
 
 ## 6. Normalization rules
 
@@ -99,5 +103,6 @@ Extend `restAdapter` with:
 - T5: provider reload adds/removes source.
 - T5: collision rejected.
 - T6: single-source prefix stable.
-- `restadapter`: GET path/query, POST JSON body, unknown tool, upstream 5xx, metadata-host/allowedHosts.
+- `restadapter`: GET path/query, POST JSON body, unknown tool, upstream 5xx, metadata-host/allowedHosts, OAuth2 client credentials, HMAC signature; multipart/long-running still Phase 2.
 - `modernclient`: 2026-07-28 headers/`_meta` list/call; HTTP error.
+- `stdio`: initialize/list/call over a child process, HTTP `/mcp` mapping; no process pool/restart yet.

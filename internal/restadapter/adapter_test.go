@@ -2,6 +2,9 @@ package restadapter
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -127,6 +130,84 @@ func TestPostJSONBody(t *testing.T) {
 	mu.Unlock()
 	if body["sku"] != "x" || body["qty"].(float64) != 2 {
 		t.Fatalf("body = %+v", body)
+	}
+}
+
+func TestOAuth2ClientCredentials(t *testing.T) {
+	tokenSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.Form.Get("grant_type") != "client_credentials" {
+			t.Errorf("grant_type = %q", r.Form.Get("grant_type"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"token-1","token_type":"Bearer","expires_in":3600}`))
+	}))
+	defer tokenSrv.Close()
+
+	var (
+		mu      sync.Mutex
+		gotAuth string
+	)
+	apiSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		gotAuth = r.Header.Get("Authorization")
+		mu.Unlock()
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer apiSrv.Close()
+
+	spec := testSpec(apiSrv.URL)
+	spec.Auth = &source.AuthSpec{Type: "oauth2", TokenURL: tokenSrv.URL, ClientID: "id", ClientSecret: "secret"}
+	a, err := New(spec, apiSrv.Client())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := a.Call(context.Background(), "get_customer", json.RawMessage(`{"customer_id":"42"}`)); err != nil {
+		t.Fatalf("Call: %v", err)
+	}
+	mu.Lock()
+	auth := gotAuth
+	mu.Unlock()
+	if auth != "Bearer token-1" {
+		t.Fatalf("auth = %q", auth)
+	}
+}
+
+func TestHMACSignature(t *testing.T) {
+	const secret = "hmac-secret"
+	var (
+		mu     sync.Mutex
+		gotSig string
+	)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write(raw)
+		mu.Lock()
+		gotSig = r.Header.Get("X-Signature")
+		sig := gotSig
+		mu.Unlock()
+		if sig != hex.EncodeToString(mac.Sum(nil)) {
+			t.Errorf("signature mismatch")
+		}
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	spec := testSpec(srv.URL)
+	spec.Auth = &source.AuthSpec{Type: "hmac", Secret: secret, Header: "X-Signature"}
+	a, err := New(spec, srv.Client())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := a.Call(context.Background(), "create_order", json.RawMessage(`{"sku":"x","qty":2}`)); err != nil {
+		t.Fatalf("Call: %v", err)
+	}
+	mu.Lock()
+	sig := gotSig
+	mu.Unlock()
+	if sig == "" {
+		t.Fatal("missing signature")
 	}
 }
 

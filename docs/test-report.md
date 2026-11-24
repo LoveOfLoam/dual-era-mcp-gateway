@@ -39,6 +39,7 @@ powershell -File scripts/test.ps1
 | `internal/extauthz` | PASS |
 | `internal/ratelimit` | PASS |
 | `internal/modernclient` | PASS |
+| `internal/stdio` | PASS (helper process) |
 | `internal/audit` | PASS |
 | `internal/obs` | PASS |
 | `internal/xds` | PASS (ADS CDS/RDS/LDS + ACK/NACK) |
@@ -63,6 +64,7 @@ powershell -File scripts/test.ps1
 | `internal/xds` | 81.9% |
 | `internal/facade` | 80.8% |
 | `internal/modernclient` | 77.6% |
+| `internal/stdio` | 70.7% |
 | `internal/obs` | 77.4% |
 | `internal/aggregator` | 73.2% |
 | `internal/mcp` | 71.2% |
@@ -92,7 +94,7 @@ powershell -File scripts/test.ps1
    - Generated full topology is served by `cmd/controlplane` at `/api/v1/envoy`.
 3. **Docker integration** is not executed because the sandbox cannot reach the Docker daemon. `deploy/t8/docker-compose.yml` and `scripts/t8.ps1` are ready; the script correctly reports SKIP here.
 4. **xDS** now serves public CDS/RDS/LDS plus ACK/NACK callbacks. The internal `mcp_router` listener is still static; TLS/SSE/zero-downtime are not validated.
-5. **K8s/Nacos** are implemented as manifest/Config-Service providers, not live informer/service-discovery clients. Helm is a skeleton; no cluster/CRD validation. Complex REST (OAuth/HMAC/multipart/long-running) remains Phase 2.
+5. **K8s/Nacos** are implemented as manifest/Config-Service providers, not live informer/service-discovery clients. Helm is a skeleton; no cluster/CRD validation. Complex REST multipart/binary/long-running remains Phase 2; OAuth2 client credentials and HMAC are implemented.
 
 ## Verdict
 

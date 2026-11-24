@@ -98,7 +98,7 @@ MVP 代码级完成：
 | xDS | public CDS/RDS/LDS + ACK/NACK | `[~]` public 完成；internal listener 静态 |
 | 数据面 | public path routing、legacy 聚合、modern facade | `[~]` 本地 Go；Envoy `[!]` |
 | 策略 | API key/tenant/allowlist/内存限流 | `[x]` 库；ext_authz/Redis `[ ]` |
-| 工具源 | native MCP + REST | `[x]` 库；复杂 REST `[ ]` |
+| 工具源 | native MCP + REST | `[x]` 库；复杂 REST `[~]`（OAuth/HMAC 已做） |
 | Provider | static/OpenAPI/K8s manifest/Nacos | `[x]` 库；live informer/discovery `[ ]` |
 | 可观测 | metrics/logs/traces | `[ ]` 基本未做 |
 | 运维 | CI、runbook、Helm/kind | `[~]` CI/runbook/Helm 骨架；kind/集群未验 |
@@ -109,8 +109,8 @@ MVP 代码级完成：
 - internal `mcp_router` listener 的 LDS 资源生成。
 - canary（node metadata / 独立 Deployment）。
 - JWT/OIDC、Redis 分布式限流、并发限制。
-- stdio bridge。
-- 复杂 REST：OAuth/HMAC/multipart/二进制/长任务/复杂分页。
+- stdio 进程池/自动重启、SSE。
+- 复杂 REST：multipart/二进制/长任务/复杂分页（OAuth/HMAC 已做）。
 - OpenAPI 3.1 完整 importer、`$ref` 解析。
 - K8s informer/CRD/controller、Nacos 服务发现。
 - 多 gateway/多 listener/多租户物理隔离。
@@ -137,7 +137,7 @@ MVP 代码级完成：
 | 环境 | 本机无 Envoy、无 Docker daemon、无 gcc/clang；`-race` 与 T8 需 CI/外部环境 |
 | 凭据 | GitHub push 在当前会话可能失败（`SEC_E_NO_CREDENTIALS`），不代表代码问题 |
 | 网络 | Phase 1 可信内网；不承诺公网安全 |
-| MCP | 只做 HTTP/SSE；stdio Phase 2 |
+| MCP | HTTP/SSE；stdio 单进程桥已做，进程池 Phase 2 |
 
 ---
 
@@ -232,7 +232,7 @@ MVP 代码级完成：
 | ext_authz | 19001 | gRPC | `[x]` 服务 |
 | ratelimit | 19002 | gRPC | `[x]` 服务 |
 | Redis | 6379 | Redis | `[~]` 代码 + miniredis；未部署 |
-| stdio bridge | 18081（planned） | HTTP/SSE | `[ ]` |
+| stdio bridge | 18081 | HTTP | `[x]` 单进程 |
 
 > 端口以部署配置为准；本地 mock 占用 9001/9002，避免与策略服务冲突。
 
@@ -336,8 +336,8 @@ MVP 代码级完成：
 | E-05 | Nacos Config Provider | P1 | E-01 | dataId/group/tenant | `[x]` |
 | E-06 | Native MCP client | P0 | C-02 | initialize/session/list/call | `[x]` |
 | E-07 | REST adapter | P0 | E-01 | path/query/body | `[~]` 无 OAuth/HMAC |
-| E-08 | 复杂 REST | P2 | E-07 | OAuth/HMAC/multipart/长任务 | `[ ]` |
-| E-09 | stdio bridge | P2 | C-02 | 进程池/重启 | `[ ]` |
+| E-08 | 复杂 REST | P2 | E-07 | OAuth/HMAC/multipart/长任务 | `[~]` OAuth2 client credentials + HMAC；multipart/长任务未做 |
+| E-09 | stdio bridge | P2 | C-02 | 进程池/重启 | `[~]` 单进程 JSON-RPC 桥 + HTTP handler；无进程池/自动重启 |
 | E-10 | Registry 前缀/排序/冲突 | P0 | E-06/E-07 | 单源也带前缀 | `[x]` |
 | E-11 | modern MCP upstream | P2 | C-03 | 直连 2026-07-28 | `[x]` `internal/modernclient` + `cmd/gateway -modern`；Envoy 路由未做 |
 | E-12 | Provider/Adapter 接入控制面 | P0 | E-02/E-07 | 从配置构建真实 catalog | `[~]` 库有，命令未接线 |
@@ -404,6 +404,8 @@ MVP 代码级完成：
 | audit | JSONL auth/rate-limit events + drop counter | `internal/audit` 单测 |
 | JWT | HS256 issuer/audience/exp/nbf + tenant claim | `internal/policy` 单测 |
 | dry-run | config diff API | `controlplane.DiffConfigs` + `/api/v1/dry-run` |
+| stdio bridge | 子进程 JSON-RPC + `/mcp` handler | `internal/stdio` helper-process tests |
+| REST auth | OAuth2 client credentials + HMAC | `internal/restadapter` 测试 |
 | dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 
 仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。
@@ -430,7 +432,7 @@ MVP 代码级完成：
 |---|---|---|
 | W1 | Spike + 脚手架 | `[x]` Gate 1、仓库、CI |
 | W2 | 控制面骨架 | `[~]` 配置/版本/CDS；CRD/controller 未做 |
-| W3 | 聚合 + stdio | `[~]` native/REST 聚合；stdio 未做 |
+| W3 | 聚合 + stdio | `[~]` native/REST 聚合；stdio 单进程桥已做 |
 | W4 | 策略面 | `[~]` ext_authz/ratelimit 服务已做；Redis/TLS/Envoy 运行时未验 |
 | W5 | 2026-07-28 + REST | `[~]` facade/REST adapter；Envoy conformance 未做 |
 | W6 | 零停机 | `[ ]` |
@@ -449,7 +451,7 @@ MVP 代码级完成：
 | FR-DP 数据面（18） | 2 | 6 | 10 | Envoy 运行时整体未验证 |
 | FR-POL 策略面（12） | 4 | 3 | 5 | 无 ext_authz/Redis/JWT |
 | FR-TR Tool Registry（7） | 3 | 2 | 2 | 无独立服务/drift |
-| FR-STD stdio（7） | 0 | 0 | 7 | 未开始 |
+| FR-STD stdio（7） | 1 | 2 | 4 | 单进程桥、基础 HTTP；进程池/SSE/重启未做 |
 | FR-REST REST（10） | 2 | 5 | 3 | Go adapter 有；Envoy/SSRF 未做 |
 | FR-OBS 可观测（9） | 0 | 0 | 9 | 未开始 |
 | FR-SEC 安全（10） | 2 | 3 | 5 | TLS/SSRF/admin auth 未做 |
@@ -646,8 +648,8 @@ powershell -File scripts/envoy-validate.ps1
 
 ### P2：扩展
 
-10. stdio bridge。
-11. 复杂 REST adapter（OAuth/HMAC/multipart/长任务）。
+10. stdio 进程池/自动重启。
+11. 复杂 REST adapter（multipart/二进制/长任务；OAuth/HMAC 已做）。
 12. modern MCP upstream。
 13. canary、审计、多租户物理隔离。
 
