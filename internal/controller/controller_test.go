@@ -2,6 +2,9 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,6 +99,26 @@ spec:
 	}
 	if cfg.Consumers[0].Tenant != "acme" {
 		t.Fatalf("tenant = %q", cfg.Consumers[0].Tenant)
+	}
+}
+
+func TestHTTPApplier(t *testing.T) {
+	var gotPath string
+	var got controlplane.Config
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Errorf("decode: %v", err)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := (HTTPApplier{BaseURL: srv.URL}).Apply(context.Background(), controlplane.Config{}); err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	if gotPath != "/api/v1/apply" || got.Sources != nil {
+		t.Fatalf("path=%q cfg=%+v", gotPath, got)
 	}
 }
 

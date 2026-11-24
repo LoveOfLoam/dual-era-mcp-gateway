@@ -68,7 +68,7 @@ powershell -File scripts/test.ps1
 | `internal/modernclient` | 77.6% |
 | `internal/stdio` | 70.7% |
 | `internal/admission` | 79.4% |
-| `internal/controller` | 55.3% |
+| `internal/controller` | 68.0% |
 | `internal/obs` | 77.4% |
 | `internal/aggregator` | 73.2% |
 | `internal/mcp` | 71.2% |
