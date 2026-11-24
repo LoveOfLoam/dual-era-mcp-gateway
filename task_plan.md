@@ -322,7 +322,7 @@ MVP 代码级完成：
 | D-09 | JWT/JWKS | P0 | D-06 | 过期/错 audience 401 | `[x]` HS256/RS256/JWKS 缓存 + 测试；无密钥轮换/审计 |
 | D-10 | 审计 JSONL | P0 | D-06 | 无 payload/密钥 | `[x]` `internal/audit` + ext_authz/ratelimit |
 | D-11 | 策略指标 | P0 | D-06 | decisions/degraded | `[~]` facade 计数器；gRPC 指标未做 |
-| D-12 | 失败模式 | P0 | D-06 | auth fail-closed；Redis fail-open | `[x]` ext_authz deny + Redis fallback 测试 |
+| D-12 | 失败模式 | P0 | D-06 | auth fail-closed；Redis fail-open | `[x]` ext_authz deny + T8 Redis 停机 fallback |
 | D-13 | 接入 `cmd/gateway` | P0 | D-01 | 本地网关真正启用策略 | `[x]` `-policy` 已接线；legacy 路径仍由 Envoy/ext_authz 负责 |
 
 ### WS-E 工具源 / Provider
@@ -377,7 +377,7 @@ MVP 代码级完成：
 | G-10 | AC-01..AC-30 | P0 | T0..T8 | 全部通过或有明确 skip | `[~]` 子集 |
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
 | G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` T8 5s/10 并发 3.1k RPS，p95 4.8ms，0 error；无 500RPS/10min/SSE |
-| G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` T8 实测 backend 部分失败/恢复、ext_authz fail-closed；无 Redis/NACK/SSE |
+| G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` T8 实测 backend 部分失败/恢复、ext_authz fail-closed、Redis 停机 fail-open；无 NACK/SSE/HA |
 | G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` 401/403/429/Origin/SSRF/body；无 413/431 Envoy 实测 |
 | G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[x]` `docs/demo.md`；未录视频 |
 | G-16 | ADR-001..007 | P1 | A-05 | 3 篇以上 | `[x]` 7 篇 |
@@ -675,3 +675,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v9 | T8 加 `mcp_json_rest_bridge` 内部 listener：`rest__get_customer` 聚合与调用 PASS；REST bridge 不再列为未覆盖 |
 | 2026-11-25 | v10 | T8 加真实压测：10 workers/5s → 3,114 RPS，p95 4.80ms，0 error；记录为单机 Docker 证据，不是 500RPS/10min SLA |
 | 2026-11-25 | v11 | T8 chaos 实跑：停 crm 后 partial catalog 200、dead call 500、恢复；停 policy 后 403 fail-closed |
+| 2026-11-25 | v12 | T8 chaos 增加 Redis 停机：ratelimit fallback 后请求仍 200，验证 fail-open |

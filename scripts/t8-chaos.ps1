@@ -102,7 +102,20 @@ try {
     Write-Host "while policy stopped: status=$($denied.Status) body=$($denied.Body)"
     if ($denied.Status -eq 200) { throw "requests passed while ext_authz was down" }
 
-    Write-Host "T8 CHAOS PASS: partial backend failure, recovery, ext_authz fail-closed"
+    Write-Host "==> restart policy, stop Redis (ratelimit fail-open)"
+    $ErrorActionPreference = "Continue"
+    docker compose -f $compose start policy *> $null
+    $ErrorActionPreference = "Stop"
+    Start-Sleep -Seconds 3
+    $ErrorActionPreference = "Continue"
+    docker compose -f $compose stop redis *> $null
+    $ErrorActionPreference = "Stop"
+    Start-Sleep -Seconds 2
+    $fallback = Invoke-JsonPost "http://127.0.0.1:8080/mcp" '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"weather__get_weather","arguments":{"q":"Paris"}}}' @{"Mcp-Session-Id" = $sid; "Mcp-Name" = "weather__get_weather"}
+    Write-Host "while Redis stopped: status=$($fallback.Status) body=$($fallback.Body)"
+    if ($fallback.Status -ne 200) { throw "Redis fail-open did not allow the request" }
+
+    Write-Host "T8 CHAOS PASS: partial backend failure, recovery, ext_authz fail-closed, Redis fail-open"
 } catch {
     Write-Host "T8 CHAOS FAIL: $($_.Exception.Message)"
     exit 1
