@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-sources
+  namespace: default
+data:
+  sources.yaml: |
+    kind: McpSource
+    spec:
+      name: weather
+      type: mcp
+      endpoint: http://weather:9001/mcp
+      prefix: weather
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-controller
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: mcp-controller}
+  template:
+    metadata:
+      labels: {app: mcp-controller}
+    spec:
+      containers:
+        - name: controller
+          image: dual-era-mcp-gateway:dev
+          command: ["/controller"]
+          args:
+            - "-dir=/config"
+            - "-controlplane=http://controlplane:18080"
+            - "-interval=2s"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: mcp-sources

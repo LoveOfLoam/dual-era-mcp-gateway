@@ -8,8 +8,8 @@ These manifests define **schemas only**:
 What is **not** implemented:
 
 - a controller that watches these CRs and applies a `controlplane.Config`;
-- a deployed admission webhook (the handler/manifests exist in
-  `internal/admission` and `deploy/admission`, but no cluster/TLS validation);
+- a CRD controller/informer (there is a ConfigMap-directory controller in
+  `internal/controller`, but it polls a volume, not the Kubernetes API);
 - status/conditions, finalizers, leader election, mTLS.
 
 `kubectl apply -f deploy/crds/` creates the CRDs, but nothing reconciles them.

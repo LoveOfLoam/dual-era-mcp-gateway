@@ -26,6 +26,17 @@ go run ./cmd/stdio-bridge -addr :18081 -command node -args "server.js,--stdio"
 This is a single child process; no process pool or automatic restart yet.
 Expose it to the internal Envoy `mcp_router` as a legacy MCP backend.
 
+## ConfigMap directory controller
+
+```powershell
+go run ./cmd/controller -dir ./deploy/controller/example -controlplane http://127.0.0.1:18080 -once
+# or poll:
+go run ./cmd/controller -dir ./deploy/controller/example -controlplane http://127.0.0.1:18080
+```
+
+It applies only when the compiled config hash changes. This is not a CRD
+informer; see `deploy/controller/README.md`.
+
 ## Admission webhook
 
 ```powershell

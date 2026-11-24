@@ -41,6 +41,7 @@ powershell -File scripts/test.ps1
 | `internal/modernclient` | PASS |
 | `internal/stdio` | PASS (helper process) |
 | `internal/admission` | PASS |
+| `internal/controller` | PASS |
 | `internal/audit` | PASS |
 | `internal/obs` | PASS |
 | `internal/xds` | PASS (ADS CDS/RDS/LDS + ACK/NACK) |
@@ -67,6 +68,7 @@ powershell -File scripts/test.ps1
 | `internal/modernclient` | 77.6% |
 | `internal/stdio` | 70.7% |
 | `internal/admission` | 79.4% |
+| `internal/controller` | 55.3% |
 | `internal/obs` | 77.4% |
 | `internal/aggregator` | 73.2% |
 | `internal/mcp` | 71.2% |

@@ -155,6 +155,7 @@ cmd/
   legacy-mock/      # local legacy MCP server
   stdio-bridge/     # stdio MCP -> HTTP /mcp bridge
   admission/        # ValidatingAdmissionWebhook
+  controller/       # ConfigMap directory reconcile -> control plane
 internal/
   mcp/              # JSON-RPC, _meta, headers, errors
   facade/           # 2026-07-28 endpoint
@@ -162,6 +163,7 @@ internal/
   modernclient/     # 2026-07-28 stateless MCP client
   stdio/            # stdio JSON-RPC bridge + HTTP handler
   admission/        # AdmissionReview validation for McpSource/McpConsumer
+  controller/       # directory/ConfigMap -> controlplane.Config reconcile
   aggregator/       # multi-source normalization
   registry/         # prefix/sort/collision
   policy/           # API key/tenant/allowlist/rate limit
@@ -185,6 +187,7 @@ deploy/helm/dual-era # Helm skeleton
 deploy/observability # starter Grafana dashboard + Prometheus rules
 deploy/crds/        # McpSource/McpConsumer schemas (no controller)
 deploy/admission/   # webhook Deployment/Service/configuration skeleton
+deploy/controller/  # ConfigMap directory controller Deployment
 docs/benchmarks/    # microbenchmark reports
 docs/adr/           # ADR-001..007
 docs/runbook.md     # operations runbook
@@ -204,6 +207,7 @@ Implemented:
 - legacy and 2026-07-28 native MCP clients;
 - stdio MCP bridge (`cmd/stdio-bridge`);
 - admission webhook handler + manifests (not cluster-validated);
+- ConfigMap directory controller (not a CRD informer);
 - static/OpenAPI/K8s-manifest/Nacos providers;
 - generic REST adapter (path/query/JSON body, OAuth2 client credentials, HMAC signatures);
 - tool prefix/sort/collision;
