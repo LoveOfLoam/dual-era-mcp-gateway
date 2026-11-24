@@ -100,7 +100,7 @@ func allowed(tenant string) *authv3.CheckResponse {
 	}
 	return &authv3.CheckResponse{
 		Status:       status.New(codes.OK, "").Proto(),
-		HttpResponse: &authv3.CheckResponse_OkResponse{OkResponse: &authv3.OkHttpResponse{Headers: headers, HeadersToRemove: []string{"authorization", "x-api-key", "x-tenant-id"}}},
+		HttpResponse: &authv3.CheckResponse_OkResponse{OkResponse: &authv3.OkHttpResponse{Headers: headers, HeadersToRemove: []string{"authorization", "x-api-key"}}},
 	}
 }
 

@@ -71,6 +71,11 @@ func TestCheckAllowed(t *testing.T) {
 	if !foundTenant {
 		t.Fatalf("tenant header missing: %+v", ok.GetHeaders())
 	}
+	for _, h := range ok.GetHeadersToRemove() {
+		if h == "x-tenant-id" {
+			t.Fatal("x-tenant-id must not be removed after being injected")
+		}
+	}
 }
 
 func TestCheckUnauthenticated(t *testing.T) {

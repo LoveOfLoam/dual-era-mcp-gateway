@@ -40,10 +40,10 @@ powershell -File scripts/t8.ps1
   $env:ENVOY_IMAGE="envoyproxy/envoy@sha256:..."
   ```
 
-- This harness includes a minimal `ext_authz` check, but does **not** include
-  ratelimit wiring, Redis, REST bridge, SSE long connections, or 100-change
-  zero-downtime. Those are separate gates; do not claim them from this smoke
-  test.
+- This harness includes `ext_authz` and the Envoy `ratelimit` filter (70 calls
+  produce 60×200 / 10×429 with the demo RPM=60 policy). It does **not** include
+  Redis-backed limits, REST bridge, SSE long connections, TLS runtime, or
+  100-change zero-downtime. Those are separate gates.
 - There is an **optional TLS overlay** (`docker-compose.tls.yml` +
   `envoy-public-tls.yaml`) and `scripts/gen-dev-cert.ps1`. It is a config
   artifact; this environment has neither Docker nor Envoy to validate it.

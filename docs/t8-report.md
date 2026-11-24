@@ -28,6 +28,8 @@ Observed output (abridged):
 ```text
 ==> docker compose up --build
 ==> legacy /mcp initialize + tools/list
+==> legacy tools/call + ratelimit 429
+==> ratelimit observed: 200=60 429=10
 ==> modern /modern/mcp discover + tools/list
 T8 PASS: public path split + internal mcp_router + modern facade
 t8_exit=0
@@ -41,7 +43,9 @@ t8_exit=0
 - legacy `tools/list` contains `weather__get_weather` and `crm__get_customer`;
 - modern `server/discover` returns 200;
 - modern `tools/list` contains both namespaced tools;
-- public Envoy `ext_authz` allows the demo key `test`.
+- public Envoy `ext_authz` allows the demo key `test`;
+- Envoy `ratelimit` filter + Go ratelimit service: 60 calls allowed, 10 calls
+  returned 429 in the 70-call burst (policy RPM=60).
 
 ## Issues fixed during the run
 
@@ -55,11 +59,16 @@ t8_exit=0
    for up to 30s while policy/backends warm up.
 4. **Teardown stderr treated as failure** → teardown runs with
    `$ErrorActionPreference = "Continue"`, so a successful run exits 0.
+5. **Ratelimit descriptors were empty** → ext_authz removed `x-tenant-id` and
+   then added it, so the ratelimit filter saw no tenant. Removed `x-tenant-id`
+   from `HeadersToRemove`; 70 calls then produced 60×200 / 10×429.
+6. **Catalog fanout race** → `tools/list` could return only one backend right
+   after startup; the script now retries until both tools appear.
 
 ## Not covered by this run
 
 - TLS/mTLS (TLS overlay exists but is not exercised);
-- ratelimit filter wiring / Redis;
+- Redis-backed ratelimit (the in-memory policy is exercised);
 - REST bridge on the internal listener;
 - SSE long connections and zero-downtime LDS/CDS churn;
 - multi-instance HA, canary, K8s.

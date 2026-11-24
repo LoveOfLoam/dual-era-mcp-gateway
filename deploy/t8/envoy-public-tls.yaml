@@ -55,6 +55,10 @@ static_resources:
                               retry_on: "reset,connect-failure"
                               num_retries: 2
                               per_try_timeout: 2s
+                            rate_limits:
+                              - actions:
+                                  - request_headers: {header_name: "x-tenant-id", descriptor_key: "tenant"}
+                                  - request_headers: {header_name: "mcp-name", descriptor_key: "tool"}
                         - match: {prefix: "/mcp"}
                           route:
                             cluster: legacy_envoy
@@ -62,6 +66,10 @@ static_resources:
                               retry_on: "reset,connect-failure"
                               num_retries: 2
                               per_try_timeout: 2s
+                            rate_limits:
+                              - actions:
+                                  - request_headers: {header_name: "x-tenant-id", descriptor_key: "tenant"}
+                                  - request_headers: {header_name: "mcp-name", descriptor_key: "tool"}
                         - match: {prefix: "/healthz"}
                           direct_response:
                             status: 200
@@ -74,6 +82,17 @@ static_resources:
                         envoy_grpc: {cluster_name: policy_authz}
                         timeout: 0.5s
                       failure_mode_allow: false
+                  - name: envoy.filters.http.ratelimit
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+                      domain: mcp
+                      timeout: 0.5s
+                      failure_mode_deny: false
+                      rate_limit_service:
+                        grpc_service:
+                          envoy_grpc: {cluster_name: policy_ratelimit}
+                          timeout: 0.5s
+                        transport_api_version: V3
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -90,6 +109,18 @@ static_resources:
               - endpoint:
                   address:
                     socket_address: {address: policy, port_value: 19001}
+    - name: policy_ratelimit
+      type: STRICT_DNS
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 1s
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: policy_ratelimit
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: policy, port_value: 19002}
     - name: modern_gateway
       type: STRICT_DNS
       dns_lookup_family: V4_ONLY

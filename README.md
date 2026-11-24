@@ -145,8 +145,8 @@ Current status (2026-11-25):
 - `go vet` / `go build`: green; CI race run: **green** on the previous batch.
 - `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
 - `scripts/t8.ps1`: **PASS** with `envoyproxy/envoy:v1.40.2` on Docker Desktop.
-  See [`docs/t8-report.md`](docs/t8-report.md). TLS/SSE/ratelimit/Redis are not
-  part of this T8 run.
+  See [`docs/t8-report.md`](docs/t8-report.md). TLS/SSE/Redis are not part of
+  this T8 run; ext_authz and ratelimit are.
 
 See [`docs/test-report.md`](docs/test-report.md) and [`docs/spec/acceptance-tests.md`](docs/spec/acceptance-tests.md).
 
@@ -235,7 +235,7 @@ Implemented:
 
 Not implemented / not verified:
 
-- T8 coverage of TLS/SSE/ratelimit/Redis (the base path split + router + modern facade is PASS);
+- T8 coverage of TLS/SSE/Redis (base path split + router + modern facade + ext_authz + ratelimit is PASS);
 - single-endpoint B2;
 - full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;

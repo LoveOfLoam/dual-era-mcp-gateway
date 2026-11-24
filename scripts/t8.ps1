@@ -85,12 +85,35 @@ try {
     $session = $init.Session
     if (-not $session) { throw "legacy initialize did not return Mcp-Session-Id" }
     $listBody = '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
-    $list = Invoke-JsonPost "http://127.0.0.1:8080/mcp" $listBody @{"Mcp-Session-Id" = $session}
-    if ($list.Status -ne 200) { throw "legacy tools/list status $($list.Status): $($list.Body)" }
-    $names = @($list.Json.result.tools | ForEach-Object { $_.name })
+    $names = @()
+    for ($i = 0; $i -lt 30; $i++) {
+        $list = Invoke-JsonPost "http://127.0.0.1:8080/mcp" $listBody @{"Mcp-Session-Id" = $session}
+        if ($list.Status -eq 200) {
+            $names = @($list.Json.result.tools | ForEach-Object { $_.name })
+            if (($names -contains "weather__get_weather") -and ($names -contains "crm__get_customer")) { break }
+        }
+        Start-Sleep -Seconds 1
+    }
     if (-not ($names -contains "weather__get_weather") -or -not ($names -contains "crm__get_customer")) {
         throw "legacy catalog missing expected tools: $($names -join ',')"
     }
+
+    Write-Host "==> legacy tools/call + ratelimit 429"
+    $callBody = '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"weather__get_weather","arguments":{"q":"Paris"}}}'
+    $okCalls = 0
+    $limitedCalls = 0
+    for ($i = 0; $i -lt 70; $i++) {
+        $call = Invoke-JsonPost "http://127.0.0.1:8080/mcp" $callBody @{
+            "Mcp-Session-Id" = $session
+            "Mcp-Name"       = "weather__get_weather"
+        }
+        if ($call.Status -eq 200) { $okCalls++ }
+        elseif ($call.Status -eq 429) { $limitedCalls++ }
+    }
+    if ($limitedCalls -eq 0) {
+        throw "ratelimit did not trigger (200=$okCalls, 429=$limitedCalls)"
+    }
+    Write-Host "==> ratelimit observed: 200=$okCalls 429=$limitedCalls"
 
     Write-Host "==> modern /modern/mcp discover + tools/list"
     $meta = '"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}'
@@ -111,7 +134,18 @@ try {
         "MCP-Protocol-Version" = "2026-07-28"
         "Mcp-Method"           = "tools/list"
     }
-    $modernNames = @($modernList.Json.result.tools | ForEach-Object { $_.name })
+    $modernNames = @()
+    for ($i = 0; $i -lt 30; $i++) {
+        $modernList = Invoke-JsonPost "http://127.0.0.1:8080/modern/mcp" ('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{' + $meta + '}}') @{
+            "MCP-Protocol-Version" = "2026-07-28"
+            "Mcp-Method"           = "tools/list"
+        }
+        if ($modernList.Status -eq 200) {
+            $modernNames = @($modernList.Json.result.tools | ForEach-Object { $_.name })
+            if (($modernNames -contains "weather__get_weather") -and ($modernNames -contains "crm__get_customer")) { break }
+        }
+        Start-Sleep -Seconds 1
+    }
     if (-not ($modernNames -contains "weather__get_weather") -or -not ($modernNames -contains "crm__get_customer")) {
         throw "modern catalog missing expected tools: $($modernNames -join ',')"
     }

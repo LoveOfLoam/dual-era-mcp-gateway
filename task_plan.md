@@ -295,7 +295,7 @@ MVP 代码级完成：
 | C-01 | Public path routing | P0 | B-07 | `/mcp` 与 `/modern/mcp` 分流 | `[x]` T8 PASS |
 | C-02 | Legacy `/mcp` | P0 | C-01 | initialize/list/call | `[x]` T8 initialize/list PASS |
 | C-03 | Modern `/modern/mcp` | P0 | C-01 | discover/list/call | `[x]` T8 discover/list PASS |
-| C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz；无 TLS/ratelimit filter |
+| C-04 | HCM filter chain | P0 | C-01 | mcp→ext_authz→ratelimit→router | `[~]` T8 public 有 ext_authz+ratelimit；mcp 在 internal；无 TLS |
 | C-05 | TLS/HTTP2 | P0 | C-01 | `curl --http2` | `[~]` TLS overlay + dev cert 脚本；未运行 |
 | C-06 | `mcp_multicluster` | P0 | B-07 | 后端列表走 CDS | `[~]` 配置生成 |
 | C-07 | SSE/长连接 | P0 | C-02 | `curl -N` 不 buffer | `[ ]` |
@@ -317,8 +317,8 @@ MVP 代码级完成：
 | D-04 | 内存 RPM 限流 | P0 | D-01 | 超限 429/layer | `[x]` |
 | D-05 | Redis Lua 限流 | P0 | D-04 | 原子、跨副本 | `[x]` `RedisLimiter` + miniredis 测试；无真实 Redis 压测 |
 | D-06 | ext_authz gRPC | P0 | D-01 | Envoy 可调用 | `[x]` 服务 + 单测 + T8 实际调用 |
-| D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[x]` 服务 + 单测；未接 Redis |
-| D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[~]` ratelimit 服务有 body/Retry-After；Envoy local reply 未验证 |
+| D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[x]` 服务 + 单测 + T8 实际 429；未接 Redis |
+| D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[x]` T8 实际 429（60×200 / 10×429） |
 | D-09 | JWT/JWKS | P0 | D-06 | 过期/错 audience 401 | `[x]` HS256/RS256/JWKS 缓存 + 测试；无密钥轮换/审计 |
 | D-10 | 审计 JSONL | P0 | D-06 | 无 payload/密钥 | `[x]` `internal/audit` + ext_authz/ratelimit |
 | D-11 | 策略指标 | P0 | D-06 | decisions/degraded | `[~]` facade 计数器；gRPC 指标未做 |
@@ -378,7 +378,7 @@ MVP 代码级完成：
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
 | G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` 本地 Go 3s/10 并发 7.8k RPS；无 Envoy/SSE/长时压测 |
 | G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` 5xx/并发/body 测试 + `docs/chaos.md` 矩阵；无运行时注入 |
-| G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` API key/allowlist/Origin/SSRF allowlist/body |
+| G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` 401/403/429/Origin/SSRF/body；无 413/431 Envoy 实测 |
 | G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[x]` `docs/demo.md`；未录视频 |
 | G-16 | ADR-001..007 | P1 | A-05 | 3 篇以上 | `[x]` 7 篇 |
 | G-17 | PRD traceability | P0 | A-01 | FR/AC 映射 | `[x]` |
@@ -668,3 +668,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v2 | 按 PRD 重写：架构/职责/端口/WBS/Gate/追踪/测试/风险/Runbook；补充 K8s/Nacos/REST adapter/ADS/CDS 状态；明确 T8/race 环境阻塞与“库级完成≠生产完成” |
 | 2026-11-25 | v3 | P2 增量：ext_authz/ratelimit gRPC、gateway 策略接线、public CDS/RDS/LDS、ACK/NACK callback、`/metrics`/trace、T8/Helm harness、REST SSRF allowlist、facade 微基准；T8 运行仍阻塞 |
 | 2026-11-25 | v4 | T8 实跑 PASS（Envoy 1.40.2，Docker Desktop）：修 gcr.io 基础镜像、PowerShell JSON body、启动竞态与 teardown 退出码；补 `docs/t8-report.md` |
+| 2026-11-25 | v5 | T8 增加 Envoy ratelimit filter：70 次调用 60×200 / 10×429；修 ext_authz 删除 `x-tenant-id` 导致 descriptor 为空；补 catalog fanout 重试 |
