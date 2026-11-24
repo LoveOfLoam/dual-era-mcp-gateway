@@ -59,6 +59,8 @@ go run ./cmd/policy -config config/policy.example.json -redis-addr 127.0.0.1:637
 
 The gRPC services are consumed by Envoy in the T8/Helm configs. In local Go
 mode, `cmd/gateway -policy` uses the same policy engine in-process.
+JWT uses `jwt.hmacSecret` (HS256), `jwt.publicKeyPEM` (RS256), or `jwt.jwksURL`
+(RS256 with a 5-minute cache).
 
 ## T8
 

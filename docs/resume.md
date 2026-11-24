@@ -9,7 +9,7 @@
 - 抽象 **Provider / ToolSource** 两层：static、OpenAPI、K8s manifest、Nacos Config，
   native MCP、REST、stdio 统一成 `ListTools`/`Call`，工具名 `source__tool` 前缀、
   排序、冲突校验。
-- 实现 **策略运行时**：ext_authz gRPC（API key/HS256 JWT、tenant、tool allowlist）、
+- 实现 **策略运行时**：ext_authz gRPC（API key/HS256/RS256 JWKS JWT、tenant、tool allowlist）、
   ratelimit gRPC（内存 + Redis Lua fixed window、429 JSON-RPC body/Retry-After）、
   JSONL 审计；Redis 故障走 fail-open + 内存回退。
 - 实现 **REST → MCP adapter**：path/query/JSON body、OAuth2 client credentials、

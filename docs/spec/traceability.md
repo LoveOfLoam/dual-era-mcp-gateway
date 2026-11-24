@@ -79,7 +79,7 @@ Status rules:
 | ID | 需求 | 实现/证据 | 状态 |
 |---|---|---|---|
 | FR-POL-01 | API Key SHA-256 | `internal/policy` + tests | DONE |
-| FR-POL-02 | JWT | HS256 校验（iss/aud/exp/nbf）；无 JWKS/RS256 | PARTIAL |
+| FR-POL-02 | JWT | HS256/RS256 + JWKS 缓存，iss/aud/exp/nbf 测试；无密钥轮换 | DONE（Go 层） |
 | FR-POL-03 | tenant 只从凭证 | `Authenticate` 忽略 `x-tenant-id` + test | DONE |
 | FR-POL-04 | allowlist | `Authorize` + tests | DONE |
 | FR-POL-05 | RPM + burst/Redis | 进程内 + Redis Lua（miniredis 测试）；未做真实 Redis 压测 | PARTIAL |

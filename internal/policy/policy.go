@@ -3,6 +3,7 @@
 package policy
 
 import (
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -68,6 +69,8 @@ type Engine struct {
 	limits    []RateLimit
 	windows   map[string]*window
 	jwt       *JWTConfig
+	publicKey *rsa.PublicKey
+	jwks      *jwksCache
 }
 
 // New builds an Engine and validates key digests.
@@ -78,6 +81,18 @@ func New(cfg Config) (*Engine, error) {
 		limits:    cfg.RateLimits,
 		windows:   make(map[string]*window),
 		jwt:       cfg.JWT,
+	}
+	if cfg.JWT != nil {
+		if cfg.JWT.PublicKeyPEM != "" {
+			pub, err := parseRSAPublicKey(cfg.JWT.PublicKeyPEM)
+			if err != nil {
+				return nil, fmt.Errorf("jwt public key: %w", err)
+			}
+			e.publicKey = pub
+		}
+		if cfg.JWT.JWKSURL != "" {
+			e.jwks = &jwksCache{url: cfg.JWT.JWKSURL, keys: map[string]*rsa.PublicKey{}}
+		}
 	}
 	for _, c := range cfg.Consumers {
 		if c.Tenant == "" {
