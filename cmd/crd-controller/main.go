@@ -25,6 +25,8 @@ func main() {
 	controlplane := flag.String("controlplane", "http://controlplane:18080", "control-plane base URL")
 	insecure := flag.Bool("insecure", false, "skip Kubernetes API TLS verification (test only)")
 	once := flag.Bool("once", false, "reconcile once and exit")
+	leaderElect := flag.Bool("leader-elect", false, "use a coordination.k8s.io Lease for single-writer leadership")
+	leaseName := flag.String("lease-name", "mcp-crd-controller", "leader-election Lease name")
 	flag.Parse()
 
 	client, err := kube.NewTokenFileClient(*api, *namespace, *tokenFile)
@@ -43,18 +45,32 @@ func main() {
 		Client:  client,
 		Applier: controller.HTTPApplier{BaseURL: *controlplane},
 	}
-	if *once {
-		_, _, err := watcher.ReconcileOnce(ctx)
-		if err != nil {
-			log.Fatalf("reconcile: %v", err)
+	run := func(runCtx context.Context) {
+		if *once {
+			_, _, err := watcher.ReconcileOnce(runCtx)
+			if err != nil {
+				log.Printf("reconcile: %v", err)
+			}
+			return
 		}
-		log.Printf("reconciled once from %s/%s", *api, *namespace)
+		if err := watcher.Run(runCtx); err != nil && err != context.Canceled {
+			log.Printf("watch: %v", err)
+		}
+	}
+	if *leaderElect && !*once {
+		identity, _ := os.Hostname()
+		if identity == "" {
+			identity = "crd-controller"
+		}
+		elector := &kube.LeaderElector{Client: client, Name: *leaseName, Identity: identity, TTL: 15 * time.Second}
+		log.Printf("leader election enabled (lease %s, identity %s)", *leaseName, identity)
+		if err := elector.Run(ctx, run); err != nil && err != context.Canceled {
+			log.Fatalf("leader election: %v", err)
+		}
 		return
 	}
 	log.Printf("watching %s/%s (controlplane %s)", *api, *namespace, *controlplane)
-	if err := watcher.Run(ctx); err != nil && err != context.Canceled {
-		log.Fatalf("watch: %v", err)
-	}
+	run(ctx)
 }
 
 func envOr(key, fallback string) string {

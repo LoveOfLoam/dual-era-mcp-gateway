@@ -41,6 +41,16 @@ proxy is unauthenticated.
 go test ./internal/kube
 ```
 
+## Leader election
+
+With `-leader-elect`, the controller uses a `coordination.k8s.io/v1` Lease
+(`-lease-name`, default `mcp-crd-controller`). Only the holder runs the
+list/watch loop; renewals happen at TTL/3 (15s TTL). `internal/kube/lease_test.go`
+covers acquire, lock contention, renewal, and expiry takeover with a fake API.
+
+The Deployment runs 2 replicas and enables `-leader-elect`; this has **not**
+been validated against a real cluster.
+
 ## Deploy
 
 `deploy/controller/crd-deployment.yaml` contains:
