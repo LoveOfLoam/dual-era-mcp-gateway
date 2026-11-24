@@ -28,7 +28,8 @@ T8 runs one Redis container and covers outage fail-open. A Sentinel overlay and
 `cmd/policy -redis-sentinel/-redis-master` are implemented, but the Docker
 Desktop run did **not** complete promotion: Sentinel entered `+tilt` mode after
 the master stop, and `get-master-addr-by-name` still returned `redis-master`
-after 15s. The harness therefore fails by design; do not claim Redis HA.
+after both 15s and 40s waits. The harness therefore fails by design; do not
+claim Redis HA.
 
 ## Long-duration SSE
 

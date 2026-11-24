@@ -689,3 +689,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v23 | 记录环境阻塞：无 kubeconfig/kind/helm；HA 17,707/3×503；Redis 单实例 |
 | 2026-11-25 | v24 | T8 自动校验 Envoy `/stats/prometheus` 的 downstream 请求指标；HTTP/TLS 都 PASS |
 | 2026-11-25 | v25 | policy 支持 Redis Sentinel；T8 Sentinel 实测因 `+tilt` 未完成 promotion，记录为 PARTIAL/BLOCKED |
+| 2026-11-25 | v26 | Sentinel 等待延长到 40s 仍未 promotion；确认 Docker Desktop tilt 阻塞，不宣称 Redis HA |
