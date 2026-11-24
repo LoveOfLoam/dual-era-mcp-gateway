@@ -80,7 +80,7 @@ B1 dual-era MCP gateway with versioned endpoints:
 | FR-C-003 | Snapshot with sources, tools, policies, routes. |
 | FR-C-004 | Rollback to previous version. |
 | FR-C-005 | Generate Envoy public/internal listener + clusters. |
-| FR-C-006 | Optional xDS server; generated config fallback documented. |
+| FR-C-006 | Minimal ADS/CDS xDS server; listeners/routes remain generated config in MVP. |
 
 ### 2.7 Observability
 

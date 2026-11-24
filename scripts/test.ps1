@@ -7,6 +7,12 @@ if (-not $env:GOCACHE) {
     $env:GOCACHE = Join-Path $env:TEMP "gocache-dual-era"
     New-Item -ItemType Directory -Force -Path $env:GOCACHE | Out-Null
 }
+if (-not $env:GOMODCACHE) {
+    # Keep module downloads writable in constrained sandboxes. On a normal
+    # workstation this can be omitted to reuse the default Go module cache.
+    $env:GOMODCACHE = Join-Path $env:TEMP "gomodcache-dual-era"
+    New-Item -ItemType Directory -Force -Path $env:GOMODCACHE | Out-Null
+}
 
 Write-Host "==> go test ./..."
 if ($Race) {

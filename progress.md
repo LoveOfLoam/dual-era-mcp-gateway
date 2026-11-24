@@ -13,6 +13,9 @@
 - Added `cmd/gateway`, `cmd/legacy-mock`, `cmd/controlplane`.
 - Added T0–T7 unit/boundary tests; T4 dual-era test covers mixed native MCP sources.
 - Updated PRD + spike with B1/tool-source amendment.
+- Added `K8sManifestProvider`, `NacosProvider`, and `internal/restadapter`.
+- Added `internal/xds` minimal ADS/CDS server using `go-control-plane`, plus an ADS streaming test.
+- Wired xDS apply/rollback into `cmd/controlplane`.
 
 ## Test log
 
@@ -28,6 +31,7 @@
 ## Known gaps
 
 - Envoy runtime T8 not executed: no Envoy binary / Docker daemon.
-- xDS server deferred; MVP has versioned config, rollback, ACK model, generated config.
-- K8s/Nacos providers and complex REST adapter are interfaces/design only.
+- xDS is ADS/CDS only; LDS/RDS resources are still generated statically.
+- K8s/Nacos providers are manifest/Config-Service based; live informer/service discovery is Phase 2.
+- Complex REST (OAuth/HMAC/multipart/long-running) still Phase 2.
 - Local race detector unavailable; CI should run `CGO_ENABLED=1 go test -race ./...`.

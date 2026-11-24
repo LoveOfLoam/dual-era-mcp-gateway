@@ -16,10 +16,12 @@ import (
 	"dual-era-mcp-gateway/internal/controlplane"
 	"dual-era-mcp-gateway/internal/envoy"
 	"dual-era-mcp-gateway/internal/source"
+	"dual-era-mcp-gateway/internal/xds"
 )
 
 func main() {
 	addr := flag.String("addr", ":18080", "listen address")
+	xdsAddr := flag.String("xds-addr", ":18000", "xDS gRPC listen address")
 	flag.Parse()
 
 	cfg := demoConfig()
@@ -27,6 +29,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("controlplane: %v", err)
 	}
+	xdsSrv := xds.New("dual-era")
+	if err := xdsSrv.Apply(context.Background(), mgr.Current().Version, cfg); err != nil {
+		log.Fatalf("xds apply: %v", err)
+	}
+	actualXDS, err := xdsSrv.Start(*xdsAddr)
+	if err != nil {
+		log.Fatalf("xds start: %v", err)
+	}
+	defer xdsSrv.Stop()
+	log.Printf("xDS ADS listening on %s", actualXDS)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -35,9 +47,10 @@ func main() {
 	mux.HandleFunc("/api/v1/status", func(w http.ResponseWriter, _ *http.Request) {
 		cur := mgr.Current()
 		writeJSON(w, http.StatusOK, map[string]any{
-			"version": cur.Version,
-			"created": cur.CreatedAt,
-			"sources": len(cur.Sources),
+			"version":     cur.Version,
+			"created":     cur.CreatedAt,
+			"sources":     len(cur.Sources),
+			"xds_version": xdsSrv.CurrentVersion(),
 		})
 	})
 	mux.HandleFunc("/api/v1/config", func(w http.ResponseWriter, _ *http.Request) {
@@ -70,6 +83,10 @@ func main() {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		if err := xdsSrv.Apply(context.Background(), snap.Version, snap.Config); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"version": snap.Version})
 	})
 	mux.HandleFunc("/api/v1/rollback", func(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +106,10 @@ func main() {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
+		if err := xdsSrv.Apply(context.Background(), snap.Version, snap.Config); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"version": snap.Version})
 	})
 
@@ -106,6 +127,7 @@ func main() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)
+		xdsSrv.Stop()
 	}()
 	log.Printf("controlplane listening on %s", *addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

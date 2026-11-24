@@ -96,6 +96,7 @@ Completion means T0–T7 green under `go test ./... -race`; T8 runnable/document
 | T6-06 | Provider reload | version changes |
 | T6-07 | Envoy config generation | non-empty, expected names |
 | T6-08 | ACK/NACK model | ack/nack recorded |
+| T6-09 | ADS/CDS stream | cluster response contains source cluster |
 
 ## T7 — Resilience/concurrency
 

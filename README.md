@@ -10,11 +10,11 @@ A **dual-era MCP gateway** with versioned endpoints:
 It supports **two tool sources**:
 
 - **native MCP Server** (legacy HTTP; modern direct client is Phase 2);
-- **RESTful API → MCP** (simple JSON REST via Envoy `mcp_json_rest_bridge`; complex REST adapter is Phase 2).
+- **RESTful API → MCP** (simple JSON REST via Envoy `mcp_json_rest_bridge`, plus a Go `restadapter` for path/query/JSON-body tools).
 
 And **two config layers**:
 
-- **Provider**: static YAML + OpenAPI in MVP; K8s ConfigMap/CRD and Nacos behind the same interface in Phase 2.
+- **Provider**: static YAML, OpenAPI, Kubernetes ConfigMap/McpSource manifest, and Nacos Config Service.
 - **ToolSource**: normalized native MCP / REST behind one `ListTools`/`Call`/`Health` contract.
 
 ## Architecture (B1)
@@ -87,6 +87,21 @@ curl.exe -sS -D - -X POST http://127.0.0.1:8080/mcp `
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 
+## Control plane + xDS
+
+```powershell
+go run ./cmd/controlplane -addr :18080 -xds-addr :18000
+```
+
+- `GET /api/v1/status` — current config version + xDS version.
+- `GET /api/v1/revisions` — history.
+- `POST /api/v1/apply` — validate/apply a new `controlplane.Config`.
+- `POST /api/v1/rollback` — `{"version":"sha256:..."}`.
+- `GET /api/v1/envoy` — generated draft Envoy topology.
+- `:18000` — ADS/CDS snapshot server (`internal/xds`); it serves clusters derived from `SourceSpec`.
+
+Current xDS scope: **CDS clusters**; listeners/routes remain statically generated until the resource builder is extended.
+
 ## Tests
 
 ```powershell
@@ -104,6 +119,7 @@ powershell -File scripts/envoy-validate.ps1
 Current status (2026-11-24):
 
 - T0–T7 boundary tests: **green**.
+- xDS ADS/CDS streaming test: **green**.
 - `go vet`: green.
 - `scripts/test.ps1`: green; Envoy validation **SKIP** (no `envoy` binary).
 - `go test -race`: **SKIP** locally (no C compiler/CGO); run it in Linux CI.
@@ -124,9 +140,11 @@ internal/
   aggregator/       # multi-source normalization
   registry/         # prefix/sort/collision
   policy/           # API key/tenant/allowlist/rate limit
-  source/           # SourceSpec, static/OpenAPI providers
+  source/           # SourceSpec + static/OpenAPI/K8s/Nacos providers
+  restadapter/      # REST SourceSpec -> legacy MCP client
   controlplane/     # config validation, versions, rollback, ACK model
   envoy/            # draft Envoy config generation
+  xds/              # minimal ADS/CDS server (go-control-plane)
   edge/             # local path dispatch
   legacyendpoint/   # local legacy /mcp
   obs/              # reserved
@@ -143,20 +161,23 @@ Implemented:
 
 - versioned dual-era endpoints;
 - native MCP + REST tool-source abstraction;
-- static/OpenAPI providers;
+- static/OpenAPI/K8s-manifest/Nacos providers;
+- generic REST adapter (path/query/JSON body);
 - tool prefix/sort/collision;
 - API key/tenant/allowlist/rate limit;
 - config validation/version/rollback/ACK model;
 - draft Envoy topology generation;
-- boundary tests T0–T7.
+- minimal ADS/CDS xDS server;
+- boundary tests T0–T7 + ADS streaming test.
 
 Not implemented (Phase 2):
 
 - single-endpoint B2;
 - modern MCP upstream;
-- K8s/Nacos providers;
+- full LDS/RDS xDS resources (currently CDS only);
+- live Kubernetes informer / Nacos service discovery;
 - complex REST adapter (OAuth/HMAC/multipart/long-running);
-- full xDS server + Envoy runtime integration;
+- real Envoy T8 runtime integration;
 - OAuth/OIDC, Redis, canary, multi-region.
 
 ## GitHub

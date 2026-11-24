@@ -80,16 +80,17 @@ Public Envoy :8443
 ### Phase 4 — sources/providers
 
 - [x] `internal/source`: `SourceSpec`, static provider, OpenAPI provider.
-- [x] Native MCP + simple REST normalized through `legacy.Client` + `aggregator`; complex REST adapter deferred to Phase 2.
+- [x] Native MCP + simple REST normalized through `legacy.Client` + `aggregator`.
+- [x] `internal/restadapter`: REST SourceSpec -> legacy MCP client (path/query/JSON body).
 - [x] Tests: mixed native+REST catalog; source failure; static provider re-Load.
-- [ ] K8s/Nacos provider implementation (interfaces/design only).
+- [x] `K8sManifestProvider` (ConfigMap/McpSource YAML) and `NacosProvider` (Config Service HTTP) behind the same Provider interface.
 
 ### Phase 5 — control plane
 
 - [x] `internal/controlplane`: config validation, version, snapshot, rollback.
 - [x] `internal/envoy`: generate public/internal listener configs and cluster config.
 - [x] Tests: invalid config, version changes, rollback, ACK/NACK model.
-- [ ] Optional: minimal xDS server using `go-control-plane` (deferred; generated config + ACK model in MVP).
+- [x] Minimal ADS xDS server (`internal/xds`) using `go-control-plane`; serves CDS clusters and has an ADS streaming test. Listeners/routes are still generated statically by `internal/envoy`.
 
 ### Phase 6 — boundary suite + Envoy
 
@@ -98,13 +99,13 @@ Public Envoy :8443
 - [x] `scripts/test.ps1` supports `-Race`; local run without gcc falls back and warns.
 - [x] `scripts/envoy-validate.ps1` runs `envoy --mode validate` when available, SKIP otherwise.
 - [x] `deploy/envoy/` bootstrap + generated config endpoint.
-- [ ] Optional T8 Docker integration (skipped: Docker daemon blocked; Envoy absent).
+- [ ] T8 Docker/Envoy runtime (blocked: Docker daemon inaccessible and Envoy not installed; documented, not faked).
 
 ### Phase 7 — docs + commit
 
 - [x] README with quick start, architecture, matrix, test evidence.
 - [x] Test report.
-- [ ] Git history with logical commits.
+- [x] Git history with logical commits.
 - [x] GitHub push instructions.
 
 ## Decisions

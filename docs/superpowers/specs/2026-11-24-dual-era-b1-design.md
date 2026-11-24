@@ -124,7 +124,9 @@ MVP:
   - snapshot model;
   - rollback history (in memory + file).
 - `internal/envoy`: generate public/internal listener and cluster config.
-- Optional xDS server using `go-control-plane`; if not feasible in MVP, generated static config + version history is the fallback and must be documented.
+- `internal/xds`: minimal ADS/CDS server using `go-control-plane`; it serves cluster resources derived from `SourceSpec`. Listener/route resources remain static in the MVP.
+- `internal/restadapter`: REST `SourceSpec` → `legacy.Client` for path/query/JSON-body tools.
+- Providers: static, OpenAPI, K8s ConfigMap/McpSource manifest, Nacos Config Service; live informer/service discovery is Phase 2.
 
 ## 6. Testing
 
@@ -147,7 +149,8 @@ Completion: `go test ./... -race` green; T0–T7 green; T8 documented.
 - Single endpoint B2.
 - Full OAuth/OIDC.
 - Redis/distributed limiter.
-- K8s/Nacos provider implementation.
-- Complex REST adapter implementation.
+- Live K8s informer/controller and Nacos service discovery.
+- Complex REST adapter (OAuth/HMAC/multipart/long-running).
+- Full LDS/RDS xDS resource generation.
 - MCP resources/prompts/subscriptions/tasks/MRTR.
 - Production hardening of WIP Envoy filters.
