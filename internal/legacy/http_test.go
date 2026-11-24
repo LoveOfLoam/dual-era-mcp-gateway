@@ -10,12 +10,13 @@ import (
 )
 
 type mockUpstream struct {
-	mu            sync.Mutex
-	initCount     int
-	listCount     int
-	requireSess   bool
-	session       string
-	failFirstList bool
+	mu                sync.Mutex
+	initCount         int
+	listCount         int
+	requireSess       bool
+	session           string
+	failFirstList     bool
+	notificationHadID bool
 }
 
 func (m *mockUpstream) handler() http.Handler {
@@ -44,6 +45,7 @@ func (m *mockUpstream) handler() http.Handler {
 				"serverInfo":      map[string]any{"name": "mock", "version": "1"},
 			})
 		case "notifications/initialized":
+			m.notificationHadID = len(req.ID) > 0
 			w.WriteHeader(http.StatusAccepted)
 		case "tools/list":
 			if m.requireSess && r.Header.Get("Mcp-Session-Id") != m.session {
@@ -99,6 +101,9 @@ func TestInitializeAndListTools(t *testing.T) {
 	}
 	if m.initCount != 1 {
 		t.Fatalf("initCount = %d", m.initCount)
+	}
+	if m.notificationHadID {
+		t.Fatal("notifications/initialized must not carry an id")
 	}
 }
 

@@ -2,6 +2,7 @@ package registry
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -84,5 +85,21 @@ func TestResolve(t *testing.T) {
 	}
 	if _, ok := c.Resolve("missing"); ok {
 		t.Fatal("unexpected resolve")
+	}
+}
+
+func TestToolJSONOmitsInternalFields(t *testing.T) {
+	c, err := Merge(map[string][]Tool{
+		"weather": {tool("get_weather", "weather")},
+	})
+	if err != nil {
+		t.Fatalf("Merge: %v", err)
+	}
+	raw, err := json.Marshal(c.List()[0])
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	if strings.Contains(string(raw), "originalName") || strings.Contains(string(raw), `"source"`) {
+		t.Fatalf("internal fields leaked: %s", raw)
 	}
 }

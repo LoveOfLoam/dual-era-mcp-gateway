@@ -142,8 +142,9 @@ func (c *HTTPClient) ensure(ctx context.Context) error {
 	c.initialized = true
 	c.mu.Unlock()
 
-	// notifications/initialized has no id and no response body we care about.
-	_, _, _ = c.post(ctx, "notifications/initialized", map[string]any{}, c.session)
+	// notifications/initialized is a JSON-RPC notification: it must not have
+	// an id and the response body is ignored.
+	_ = c.postNotification(ctx, "notifications/initialized", map[string]any{}, c.session)
 	return nil
 }
 
@@ -165,6 +166,19 @@ func (c *HTTPClient) post(ctx context.Context, method string, params any, sessio
 	if params != nil {
 		body["params"] = params
 	}
+	return c.postBody(ctx, body, session)
+}
+
+func (c *HTTPClient) postNotification(ctx context.Context, method string, params any, session string) error {
+	body := map[string]any{"jsonrpc": "2.0", "method": method}
+	if params != nil {
+		body["params"] = params
+	}
+	_, _, err := c.postBody(ctx, body, session)
+	return err
+}
+
+func (c *HTTPClient) postBody(ctx context.Context, body map[string]any, session string) (mcp.Response, string, error) {
 	raw, err := json.Marshal(body)
 	if err != nil {
 		return mcp.Response{}, "", err

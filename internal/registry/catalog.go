@@ -11,8 +11,8 @@ import (
 // Tool is one MCP tool after source normalization.
 type Tool struct {
 	Name         string          `json:"name"`
-	OriginalName string          `json:"originalName,omitempty"`
-	Source       string          `json:"source,omitempty"`
+	OriginalName string          `json:"-"`
+	Source       string          `json:"-"`
 	Description  string          `json:"description,omitempty"`
 	InputSchema  json.RawMessage `json:"inputSchema,omitempty"`
 }
