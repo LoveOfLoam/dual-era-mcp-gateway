@@ -153,6 +153,7 @@ cmd/
   controlplane/     # config/version/rollback + generated Envoy config
   policy/           # ext_authz + ratelimit gRPC services
   legacy-mock/      # local legacy MCP server
+  loadgen/          # local load generator CLI
   stdio-bridge/     # stdio MCP -> HTTP /mcp bridge
   admission/        # ValidatingAdmissionWebhook
   controller/       # ConfigMap directory reconcile -> control plane
@@ -164,6 +165,7 @@ internal/
   stdio/            # stdio JSON-RPC bridge + HTTP handler
   admission/        # AdmissionReview validation for McpSource/McpConsumer
   controller/       # directory/ConfigMap -> controlplane.Config reconcile
+  load/             # local HTTP load generator
   aggregator/       # multi-source normalization
   registry/         # prefix/sort/collision
   policy/           # API key/tenant/allowlist/rate limit
@@ -196,6 +198,7 @@ docs/resume.md      # resume bullets + interview Q&A
 docs/chaos.md       # failure-injection matrix (not executed here)
 scripts/k6/         # load-test script (not executed here)
 scripts/scan.ps1    # govulncheck/trivy when installed
+scripts/load-local.ps1 # local Go-mode load run
 ```
 
 ## Scope and non-goals

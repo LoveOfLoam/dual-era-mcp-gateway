@@ -42,6 +42,7 @@ powershell -File scripts/test.ps1
 | `internal/stdio` | PASS (helper process) |
 | `internal/admission` | PASS |
 | `internal/controller` | PASS |
+| `internal/load` | PASS |
 | `internal/audit` | PASS |
 | `internal/obs` | PASS |
 | `internal/xds` | PASS (ADS CDS/RDS/LDS + ACK/NACK) |
@@ -69,6 +70,7 @@ powershell -File scripts/test.ps1
 | `internal/stdio` | 70.7% |
 | `internal/admission` | 79.4% |
 | `internal/controller` | 68.0% |
+| `internal/load` | 89.9% |
 | `internal/obs` | 77.4% |
 | `internal/aggregator` | 73.2% |
 | `internal/mcp` | 71.2% |

@@ -376,7 +376,7 @@ MVP 代码级完成：
 | G-09 | T8 Envoy runtime | P0 | F-12 | 真实拓扑 | `[!]` |
 | G-10 | AC-01..AC-30 | P0 | T0..T8 | 全部通过或有明确 skip | `[~]` 子集 |
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
-| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` facade 微基准 + k6 脚本；未实跑 |
+| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` 本地 Go 3s/10 并发 7.8k RPS；无 Envoy/SSE/长时压测 |
 | G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` 5xx/并发/body 测试 + `docs/chaos.md` 矩阵；无运行时注入 |
 | G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` API key/allowlist/Origin/SSRF allowlist/body |
 | G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[x]` `docs/demo.md`；未录视频 |
@@ -409,6 +409,7 @@ MVP 代码级完成：
 | scan/resume | 依赖扫描脚本 + 简历/面试问答 | `scripts/scan.ps1`, `docs/resume.md` |
 | admission | AdmissionReview 校验 + 单测 | `internal/admission`, `cmd/admission` |
 | controller | ConfigMap 目录 → 控制面 apply，内容哈希去重 | `internal/controller` 测试 |
+| load | 本地 Go-mode 压测：7.8k RPS / p95 2.16ms / 0 error | `scripts/load-local.ps1`, `docs/benchmarks/2026-11-25-local-load.md` |
 | dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 
 仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。
