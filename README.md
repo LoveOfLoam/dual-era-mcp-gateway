@@ -239,7 +239,7 @@ Implemented:
 - config validation/version/rollback/ACK model;
 - public LDS/RDS plus CDS and ACK/NACK callbacks;
 - draft Envoy topology generation;
-- `/metrics`, trace-id propagation, JSON logger;
+- `/metrics`, Envoy `/stats/prometheus` (T8-checked), trace-id propagation, JSON logger;
 - T8 Docker/Envoy harness and Helm skeleton;
 - 2026-07-28 modern MCP client + `cmd/gateway -modern`;
 - in-process facade microbenchmarks;

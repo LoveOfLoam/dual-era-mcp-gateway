@@ -127,6 +127,13 @@ try {
     }
     if (-not $ready) { throw "public Envoy did not become ready" }
 
+    $prom = (Invoke-WebRequest -Uri "http://127.0.0.1:9901/stats/prometheus" -UseBasicParsing -TimeoutSec 5).Content
+    if ($prom -notmatch 'envoy_http_downstream_rq_total') {
+        throw "Envoy Prometheus stats missing downstream request metric"
+    }
+    $rqLine = ($prom -split "`n" | Where-Object { $_ -match '^envoy_http_downstream_rq_total' } | Select-Object -First 1)
+    Write-Host "==> Envoy prometheus: $rqLine"
+
     if ($TLS) {
         $h2Body = Join-Path $env:TEMP ("h2-body-" + $PID + ".json")
         [IO.File]::WriteAllText($h2Body, '{"jsonrpc":"2.0","id":99,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"h2check","version":"0"}}}', [Text.UTF8Encoding]::new($false))

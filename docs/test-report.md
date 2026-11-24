@@ -50,6 +50,7 @@ powershell -File scripts/test.ps1
 | `go vet ./...` | PASS |
 | `scripts/test.ps1` | PASS (Envoy validate SKIP) |
 | `scripts/t8-load.ps1` | PASS: 3,114 RPS / 5s and 835 RPS / 600s, 0 errors, p99 3.74ms |
+| Envoy Prometheus stats | PASS: `/stats/prometheus` exposes `envoy_http_downstream_rq_total` |
 | `scripts/t8-chaos.ps1` | PASS: partial backend 200, dead call 500, recovery, policy-down 403, Redis-down 200 fallback |
 | `scripts/t8-ha.ps1` | PARTIAL: 2 explicit gateways, stop one under load → 17,707 req / 3×503 |
 | `go test ./internal/kube` | PASS: fake K8s list + config compile + hash dedupe; Lease acquire/renew/expiry |

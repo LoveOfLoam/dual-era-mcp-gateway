@@ -62,6 +62,7 @@ used for the actual HTTP/2 request.
 - modern `server/discover` returns 200;
 - modern `tools/list` contains both namespaced tools;
 - public Envoy `ext_authz` allows the demo key `test`;
+- Envoy admin `/stats/prometheus` contains `envoy_http_downstream_rq_total`;
 - `mcp_json_rest_bridge` on its own internal listener, aggregated by
   `mcp_router` as `rest__*`;
 - Envoy `ratelimit` filter + Go ratelimit service + Redis Lua: 60 calls allowed,

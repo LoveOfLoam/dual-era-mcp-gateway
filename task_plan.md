@@ -687,3 +687,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v21 | 新增 `cmd/crd-controller` + `internal/kube` list/watch：McpSource/McpConsumer → apply；fake API 测试；无真集群验证 |
 | 2026-11-25 | v22 | CRD controller 增加 Lease leader election + 2 replicas；fake API acquire/renew/expiry 测试；无真集群验证 |
 | 2026-11-25 | v23 | 记录环境阻塞：无 kubeconfig/kind/helm；HA 17,707/3×503；Redis 单实例 |
+| 2026-11-25 | v24 | T8 自动校验 Envoy `/stats/prometheus` 的 downstream 请求指标；HTTP/TLS 都 PASS |
