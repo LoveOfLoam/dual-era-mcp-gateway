@@ -19,6 +19,9 @@ type Config struct {
 	Sources    []source.SourceSpec `json:"sources" yaml:"sources"`
 	Consumers  []policy.Consumer   `json:"consumers" yaml:"consumers"`
 	RateLimits []policy.RateLimit  `json:"rateLimits" yaml:"rateLimits"`
+	// ListenerHeader is an optional HCM header value; changing it forces an LDS
+	// listener update and is used by the T8 churn harness.
+	ListenerHeader string `json:"listenerHeader,omitempty" yaml:"listenerHeader,omitempty"`
 }
 
 // Snapshot is an immutable applied configuration.
@@ -190,10 +193,11 @@ func normalize(cfg Config) ([]byte, error) {
 	// encoding/json orders struct fields deterministically. Slices retain input
 	// order; callers should provide stable order.
 	return json.Marshal(struct {
-		Sources    []source.SourceSpec `json:"sources"`
-		Consumers  []policy.Consumer   `json:"consumers"`
-		RateLimits []policy.RateLimit  `json:"rateLimits"`
-	}{cfg.Sources, cfg.Consumers, cfg.RateLimits})
+		Sources        []source.SourceSpec `json:"sources"`
+		Consumers      []policy.Consumer   `json:"consumers"`
+		RateLimits     []policy.RateLimit  `json:"rateLimits"`
+		ListenerHeader string              `json:"listenerHeader,omitempty"`
+	}{cfg.Sources, cfg.Consumers, cfg.RateLimits, cfg.ListenerHeader})
 }
 
 // Validate checks source specs, policy keys, and cross references.

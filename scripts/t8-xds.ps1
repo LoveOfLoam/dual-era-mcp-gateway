@@ -73,11 +73,12 @@ try {
     } -ArgumentList $loadgen, $bodyFile, $outFile
 
     $base = Get-Content (Join-Path $root "deploy\t8\xds-config.json") -Raw | ConvertFrom-Json
-    $extra = $base.PSObject.Copy()
-    $extraSources = @($base.sources) + @([pscustomobject]@{ name = "extra"; type = "mcp"; protocol = "legacy"; endpoint = "http://crm:9002/mcp"; prefix = "extra" })
-    $extra.sources = $extraSources
-    $jsonA = $base | ConvertTo-Json -Depth 8
-    $jsonB = $extra | ConvertTo-Json -Depth 8
+    $a = $base.PSObject.Copy()
+    $a | Add-Member -NotePropertyName listenerHeader -NotePropertyValue "v1" -Force
+    $b = $base.PSObject.Copy()
+    $b | Add-Member -NotePropertyName listenerHeader -NotePropertyValue "v2" -Force
+    $jsonA = $a | ConvertTo-Json -Depth 8
+    $jsonB = $b | ConvertTo-Json -Depth 8
     for ($i = 0; $i -lt $Changes; $i++) {
         $json = if ($i % 2 -eq 0) { $jsonA } else { $jsonB }
         $resp = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:18080/api/v1/apply" -ContentType "application/json" -Body $json

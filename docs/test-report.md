@@ -52,7 +52,7 @@ powershell -File scripts/test.ps1
 | `scripts/t8-load.ps1` | PASS: 3,114 RPS / 5s and 835 RPS / 600s, 0 errors, p99 3.74ms |
 | `scripts/t8-chaos.ps1` | PASS: partial backend 200, dead call 500, recovery, policy-down 403, Redis-down 200 fallback |
 | `scripts/t8-mtls.ps1` | PASS: client cert 200; no cert rejected (`tls: certificate required`) |
-| `scripts/t8-xds.ps1` | PASS: 100 CDS/RDS changes, 12,580 req, 0 errors, ACK 3→250 |
+| `scripts/t8-xds.ps1` | PASS: 100 LDS/CDS/RDS changes, 12,827 req, 0 errors, ACK 3→121 |
 
 ## Coverage (selected)
 

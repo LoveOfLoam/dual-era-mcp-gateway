@@ -66,7 +66,7 @@ func buildResources(cfg controlplane.Config) (map[resource.Type][]types.Resource
 	if err != nil {
 		return nil, err
 	}
-	listeners, err := publicListener()
+	listeners, err := publicListener(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +99,13 @@ func publicRouteConfig() (*route.RouteConfiguration, error) {
 	}, nil
 }
 
-func publicListener() (*listener.Listener, error) {
+func publicListener(cfg controlplane.Config) (*listener.Listener, error) {
+	statPrefix := "public"
+	if cfg.ListenerHeader != "" {
+		statPrefix += "-" + cfg.ListenerHeader
+	}
 	hcmAny, err := anypb.New(&hcm.HttpConnectionManager{
-		StatPrefix: "public",
+		StatPrefix: statPrefix,
 		CodecType:  hcm.HttpConnectionManager_AUTO,
 		RouteSpecifier: &hcm.HttpConnectionManager_Rds{Rds: &hcm.Rds{
 			RouteConfigName: "public",
