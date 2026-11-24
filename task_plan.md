@@ -101,7 +101,7 @@ MVP 代码级完成：
 | 工具源 | native MCP + REST | `[x]` 库；复杂 REST `[ ]` |
 | Provider | static/OpenAPI/K8s manifest/Nacos | `[x]` 库；live informer/discovery `[ ]` |
 | 可观测 | metrics/logs/traces | `[ ]` 基本未做 |
-| 运维 | CI、runbook、Helm/kind | `[~]` CI；其余 `[ ]` |
+| 运维 | CI、runbook、Helm/kind | `[~]` CI/runbook/Helm 骨架；kind/集群未验 |
 
 ### 1.2 Phase 2（Stretch）
 
@@ -229,9 +229,9 @@ MVP 代码级完成：
 | legacy mock | 9001/9002 | HTTP | `[x]` |
 | public Envoy | 8443 | HTTPS/HTTP2 | `[ ]` |
 | internal Envoy | 10001 | HTTP | `[~]` 配置草案 |
-| ext_authz | 19001（planned） | gRPC | `[ ]` |
-| ratelimit | 19002（planned） | gRPC | `[ ]` |
-| Redis | 6379 | Redis | `[ ]` |
+| ext_authz | 19001 | gRPC | `[x]` 服务 |
+| ratelimit | 19002 | gRPC | `[x]` 服务 |
+| Redis | 6379 | Redis | `[~]` 代码 + miniredis；未部署 |
 | stdio bridge | 18081（planned） | HTTP/SSE | `[ ]` |
 
 > 端口以部署配置为准；本地 mock 占用 9001/9002，避免与策略服务冲突。
@@ -285,8 +285,8 @@ MVP 代码级完成：
 | B-12 | 2 副本 + leader election + mTLS | P0 | B-07 | kill 1 副本不断流 | `[ ]` |
 | B-13 | Tool Registry 服务 | P0 | B-01 | `/api/v1/tools`、stale 标记 | `[~]` 代码内有 catalog |
 | B-14 | Canary | P1 | B-12 | node metadata 分 channel | `[ ]` |
-| B-15 | 配置审计 | P0 | B-09 | 谁/何时/旧新 version | `[ ]` |
-| B-16 | Dry-run diff | P1 | B-09 | 不写 snapshot 返回 diff | `[ ]` |
+| B-15 | 配置审计 | P0 | B-09 | 谁/何时/旧新 version | `[~]` 运行事件审计有；配置变更审计无 |
+| B-16 | Dry-run diff | P1 | B-09 | 不写 snapshot 返回 diff | `[x]` API + 测试 |
 
 ### WS-C 数据面
 
@@ -320,8 +320,8 @@ MVP 代码级完成：
 | D-07 | ratelimit gRPC | P0 | D-05 | Envoy 可调用 | `[x]` 服务 + 单测；未接 Redis |
 | D-08 | 429 JSON-RPC body/Retry-After | P0 | D-07 | 响应体/头正确 | `[~]` ratelimit 服务有 body/Retry-After；Envoy local reply 未验证 |
 | D-09 | JWT/JWKS | P0 | D-06 | 过期/错 audience 401 | `[ ]` |
-| D-10 | 审计 JSONL | P0 | D-06 | 无 payload/密钥 | `[ ]` |
-| D-11 | 策略指标 | P0 | D-06 | decisions/degraded | `[ ]` |
+| D-10 | 审计 JSONL | P0 | D-06 | 无 payload/密钥 | `[x]` `internal/audit` + ext_authz/ratelimit |
+| D-11 | 策略指标 | P0 | D-06 | decisions/degraded | `[~]` facade 计数器；gRPC 指标未做 |
 | D-12 | 失败模式 | P0 | D-06 | auth fail-closed；Redis fail-open | `[x]` ext_authz deny + Redis fallback 测试 |
 | D-13 | 接入 `cmd/gateway` | P0 | D-01 | 本地网关真正启用策略 | `[x]` `-policy` 已接线；legacy 路径仍由 Envoy/ext_authz 负责 |
 
@@ -341,7 +341,7 @@ MVP 代码级完成：
 | E-10 | Registry 前缀/排序/冲突 | P0 | E-06/E-07 | 单源也带前缀 | `[x]` |
 | E-11 | modern MCP upstream | P2 | C-03 | 直连 2026-07-28 | `[x]` `internal/modernclient` + `cmd/gateway -modern`；Envoy 路由未做 |
 | E-12 | Provider/Adapter 接入控制面 | P0 | E-02/E-07 | 从配置构建真实 catalog | `[~]` 库有，命令未接线 |
-| E-13 | SSRF/URL allowlist | P0 | E-07 | metadata IP/内网拒绝 | `[ ]` |
+| E-13 | SSRF/URL allowlist | P0 | E-07 | metadata IP/内网拒绝 | `[x]` metadata host + allowedHosts |
 
 ### WS-F 可观测 / 运维
 
@@ -589,11 +589,11 @@ powershell -File scripts/envoy-validate.ps1
 | PRD traceability | `[x]` |
 | CI（build/vet/test；race on Linux） | `[~]` 无 lint/集成 |
 | Envoy bootstrap/生成配置 | `[~]` 草案 |
-| Helm/kind/CRD | `[ ]` |
-| Grafana/告警/Trace | `[ ]` |
-| 压测/混沌/安全报告 | `[ ]` |
-| ADR-001..007 | `[~]` 只有决策表 |
-| 5 分钟 demo | `[ ]` |
+| Helm/kind/CRD | `[~]` Helm 骨架；无 kind/CRD/controller |
+| Grafana/告警/Trace | `[~]` starter dashboard/rules + trace id；未部署 |
+| 压测/混沌/安全报告 | `[~]` 微基准 + k6 脚本 + SSRF/安全测试；无真实压测/chaos |
+| ADR-001..007 | `[x]` 7 篇 |
+| 5 分钟 demo | `[~]` `docs/demo.md`；未录视频 |
 | 简历 bullet/面试问答 | `[ ]` |
 
 ---
