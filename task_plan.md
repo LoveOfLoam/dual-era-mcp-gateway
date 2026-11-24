@@ -376,7 +376,7 @@ MVP 代码级完成：
 | G-09 | T8 Envoy runtime | P0 | F-12 | 真实拓扑 | `[x]` PASS |
 | G-10 | AC-01..AC-30 | P0 | T0..T8 | 全部通过或有明确 skip | `[~]` 子集 |
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
-| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` 本地 Go 3s/10 并发 7.8k RPS；无 Envoy/SSE/长时压测 |
+| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` T8 5s/10 并发 3.1k RPS，p95 4.8ms，0 error；无 500RPS/10min/SSE |
 | G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` 5xx/并发/body 测试 + `docs/chaos.md` 矩阵；无运行时注入 |
 | G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` 401/403/429/Origin/SSRF/body；无 413/431 Envoy 实测 |
 | G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[x]` `docs/demo.md`；未录视频 |
@@ -409,7 +409,7 @@ MVP 代码级完成：
 | scan/resume | 依赖扫描脚本 + 简历/面试问答 | `scripts/scan.ps1`, `docs/resume.md` |
 | admission | AdmissionReview 校验 + 单测 | `internal/admission`, `cmd/admission` |
 | controller | ConfigMap 目录 → 控制面 apply，内容哈希去重 | `internal/controller` 测试 |
-| load | 本地 Go-mode 压测：7.8k RPS / p95 2.16ms / 0 error | `scripts/load-local.ps1`, `docs/benchmarks/2026-11-25-local-load.md` |
+| load | 本地 Go-mode 7.8k RPS；T8 Envoy 2.9k RPS / p95 5.34ms / 0 error | `docs/benchmarks/2026-11-25-{local-load,t8-load}.md` |
 | config audit/metrics | actor/reason/old-new + apply/rollback/ACK/NACK counters | `/api/v1/audit`, `/metrics`, manager tests |
 | dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 
@@ -673,3 +673,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v7 | 新增 `cmd/h2check`：T8 TLS 下实际 HTTP/2 initialize 返回 200 HTTP/2.0；C-05 完成 |
 | 2026-11-25 | v8 | T8 加 Redis：policy `-redis-addr`，70 次 60×200/10×429，`DBSIZE=1`；镜像改 `Dockerfile.prebuilt` 规避 Docker 构建期 Go 模块网络阻塞；记录 SSE GET 405 |
 | 2026-11-25 | v9 | T8 加 `mcp_json_rest_bridge` 内部 listener：`rest__get_customer` 聚合与调用 PASS；REST bridge 不再列为未覆盖 |
+| 2026-11-25 | v10 | T8 加真实压测：10 workers/5s → 3,114 RPS，p95 4.80ms，0 error；记录为单机 Docker 证据，不是 500RPS/10min SLA |

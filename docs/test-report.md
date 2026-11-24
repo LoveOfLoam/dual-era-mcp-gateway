@@ -49,6 +49,7 @@ powershell -File scripts/test.ps1
 | `test/boundary` | PASS |
 | `go vet ./...` | PASS |
 | `scripts/test.ps1` | PASS (Envoy validate SKIP) |
+| `scripts/t8-load.ps1` | PASS: 3,114 RPS, p95 4.80ms, 0 errors (5s) |
 
 ## Coverage (selected)
 

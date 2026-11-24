@@ -206,6 +206,7 @@ docs/chaos.md       # failure-injection matrix (not executed here)
 scripts/k6/         # load-test script (not executed here)
 scripts/scan.ps1    # govulncheck/trivy when installed
 scripts/load-local.ps1 # local Go-mode load run
+scripts/t8-load.ps1  # real Envoy T8 load run
 ```
 
 ## Scope and non-goals
