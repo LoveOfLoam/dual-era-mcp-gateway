@@ -40,6 +40,7 @@ powershell -File scripts/test.ps1
 | `internal/ratelimit` | PASS |
 | `internal/modernclient` | PASS |
 | `internal/stdio` | PASS (helper process) |
+| `internal/admission` | PASS |
 | `internal/audit` | PASS |
 | `internal/obs` | PASS |
 | `internal/xds` | PASS (ADS CDS/RDS/LDS + ACK/NACK) |
@@ -65,6 +66,7 @@ powershell -File scripts/test.ps1
 | `internal/facade` | 80.8% |
 | `internal/modernclient` | 77.6% |
 | `internal/stdio` | 70.7% |
+| `internal/admission` | 79.4% |
 | `internal/obs` | 77.4% |
 | `internal/aggregator` | 73.2% |
 | `internal/mcp` | 71.2% |

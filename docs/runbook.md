@@ -26,6 +26,17 @@ go run ./cmd/stdio-bridge -addr :18081 -command node -args "server.js,--stdio"
 This is a single child process; no process pool or automatic restart yet.
 Expose it to the internal Envoy `mcp_router` as a legacy MCP backend.
 
+## Admission webhook
+
+```powershell
+go run ./cmd/admission -addr :18443
+# in a cluster: -cert /tls/tls.crt -key /tls/tls.key
+```
+
+The handler validates `McpSource` / `McpConsumer`; `deploy/admission` has
+Deployment/Service/ValidatingWebhookConfiguration skeletons with a placeholder
+`caBundle`. No cert-manager or cluster test exists.
+
 ## Control plane
 
 ```powershell

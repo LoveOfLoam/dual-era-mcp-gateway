@@ -154,12 +154,14 @@ cmd/
   policy/           # ext_authz + ratelimit gRPC services
   legacy-mock/      # local legacy MCP server
   stdio-bridge/     # stdio MCP -> HTTP /mcp bridge
+  admission/        # ValidatingAdmissionWebhook
 internal/
   mcp/              # JSON-RPC, _meta, headers, errors
   facade/           # 2026-07-28 endpoint
   legacy/           # legacy HTTP client + session
   modernclient/     # 2026-07-28 stateless MCP client
   stdio/            # stdio JSON-RPC bridge + HTTP handler
+  admission/        # AdmissionReview validation for McpSource/McpConsumer
   aggregator/       # multi-source normalization
   registry/         # prefix/sort/collision
   policy/           # API key/tenant/allowlist/rate limit
@@ -182,6 +184,7 @@ deploy/t8/          # Docker/Envoy T8 harness
 deploy/helm/dual-era # Helm skeleton
 deploy/observability # starter Grafana dashboard + Prometheus rules
 deploy/crds/        # McpSource/McpConsumer schemas (no controller)
+deploy/admission/   # webhook Deployment/Service/configuration skeleton
 docs/benchmarks/    # microbenchmark reports
 docs/adr/           # ADR-001..007
 docs/runbook.md     # operations runbook
@@ -200,6 +203,7 @@ Implemented:
 - native MCP + REST tool-source abstraction;
 - legacy and 2026-07-28 native MCP clients;
 - stdio MCP bridge (`cmd/stdio-bridge`);
+- admission webhook handler + manifests (not cluster-validated);
 - static/OpenAPI/K8s-manifest/Nacos providers;
 - generic REST adapter (path/query/JSON body, OAuth2 client credentials, HMAC signatures);
 - tool prefix/sort/collision;

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-admission
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: mcp-admission}
+  template:
+    metadata:
+      labels: {app: mcp-admission}
+    spec:
+      containers:
+        - name: admission
+          image: dual-era-mcp-gateway:dev
+          command: ["/admission"]
+          args:
+            - "-addr=:18443"
+            - "-cert=/tls/tls.crt"
+            - "-key=/tls/tls.key"
+          ports:
+            - containerPort: 18443
+              name: https
+          readinessProbe:
+            httpGet: {path: /healthz, port: 18443, scheme: HTTPS}
+          volumeMounts:
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+      volumes:
+        - name: tls
+          secret:
+            secretName: mcp-admission-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-admission
+  namespace: default
+spec:
+  selector: {app: mcp-admission}
+  ports:
+    - name: https
+      port: 443
+      targetPort: 18443

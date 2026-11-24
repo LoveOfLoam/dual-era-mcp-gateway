@@ -8,7 +8,8 @@ These manifests define **schemas only**:
 What is **not** implemented:
 
 - a controller that watches these CRs and applies a `controlplane.Config`;
-- an admission webhook that rejects invalid CRs;
+- a deployed admission webhook (the handler/manifests exist in
+  `internal/admission` and `deploy/admission`, but no cluster/TLS validation);
 - status/conditions, finalizers, leader election, mTLS.
 
 `kubectl apply -f deploy/crds/` creates the CRDs, but nothing reconciles them.

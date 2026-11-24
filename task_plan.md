@@ -281,7 +281,7 @@ MVP 代码级完成：
 | B-08 | LDS/RDS xDS | P0 | B-07 | listener/route 资源 + Envoy 验证 | `[ ]` 仅 public；internal `mcp_router` 仍静态 |
 | B-09 | 管理 API | P0 | B-04 | status/config/revisions/apply/rollback/envoy | `[~]` 无鉴权/dataplanes/tools |
 | B-10 | CRD + controller | P0 | B-01 | `kubectl apply` → snapshot | `[~]` CRD schema 有；controller/reconcile 未做 |
-| B-11 | Admission webhook | P0 | B-10 | 非法 CRD 拒绝 | `[ ]` |
+| B-11 | Admission webhook | P0 | B-10 | 非法 CRD 拒绝 | `[~]` handler/单测/manifests；无集群/cert-manager 验证 |
 | B-12 | 2 副本 + leader election + mTLS | P0 | B-07 | kill 1 副本不断流 | `[ ]` |
 | B-13 | Tool Registry 服务 | P0 | B-01 | `/api/v1/tools`、stale 标记 | `[~]` 代码内有 catalog |
 | B-14 | Canary | P1 | B-12 | node metadata 分 channel | `[ ]` |
@@ -407,6 +407,7 @@ MVP 代码级完成：
 | stdio bridge | 子进程 JSON-RPC + `/mcp` handler | `internal/stdio` helper-process tests |
 | REST auth | OAuth2 client credentials + HMAC | `internal/restadapter` 测试 |
 | scan/resume | 依赖扫描脚本 + 简历/面试问答 | `scripts/scan.ps1`, `docs/resume.md` |
+| admission | AdmissionReview 校验 + 单测 | `internal/admission`, `cmd/admission` |
 | dashboards/alerts | starter Grafana JSON + Prometheus rules | `deploy/observability`（未部署） |
 
 仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。
