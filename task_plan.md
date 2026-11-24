@@ -280,7 +280,7 @@ MVP 代码级完成：
 | B-07 | ADS/CDS/RDS/LDS | P0 | B-04 | gRPC ADS 返回 cluster/route/listener | `[x]` public 资源 |
 | B-08 | LDS/RDS xDS | P0 | B-07 | listener/route 资源 + Envoy 验证 | `[ ]` 仅 public；internal `mcp_router` 仍静态 |
 | B-09 | 管理 API | P0 | B-04 | status/config/revisions/apply/rollback/envoy | `[~]` 无鉴权/dataplanes/tools |
-| B-10 | CRD + controller | P0 | B-01 | `kubectl apply` → snapshot | `[ ]` |
+| B-10 | CRD + controller | P0 | B-01 | `kubectl apply` → snapshot | `[~]` CRD schema 有；controller/reconcile 未做 |
 | B-11 | Admission webhook | P0 | B-10 | 非法 CRD 拒绝 | `[ ]` |
 | B-12 | 2 副本 + leader election + mTLS | P0 | B-07 | kill 1 副本不断流 | `[ ]` |
 | B-13 | Tool Registry 服务 | P0 | B-01 | `/api/v1/tools`、stale 标记 | `[~]` 代码内有 catalog |

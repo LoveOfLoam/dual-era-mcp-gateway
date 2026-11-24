@@ -1,0 +1,16 @@
+apiVersion: gateway.dual-era.io/v1alpha1
+kind: McpSource
+metadata:
+  name: weather
+  namespace: default
+spec:
+  name: weather
+  type: mcp
+  protocol: legacy
+  endpoint: http://weather:9001/mcp
+  prefix: weather
+  tools:
+    - name: get_weather
+      description: Get current weather
+    - name: list_cities
+      description: List supported cities

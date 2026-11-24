@@ -181,6 +181,7 @@ deploy/envoy/       # bootstrap for validation
 deploy/t8/          # Docker/Envoy T8 harness
 deploy/helm/dual-era # Helm skeleton
 deploy/observability # starter Grafana dashboard + Prometheus rules
+deploy/crds/        # McpSource/McpConsumer schemas (no controller)
 docs/benchmarks/    # microbenchmark reports
 docs/adr/           # ADR-001..007
 docs/runbook.md     # operations runbook
