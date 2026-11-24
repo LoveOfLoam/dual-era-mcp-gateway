@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"dual-era-mcp-gateway/internal/mcp"
@@ -14,6 +15,7 @@ import (
 )
 
 type fakeUpstream struct {
+	mu       sync.Mutex
 	tools    []registry.Tool
 	result   json.RawMessage
 	callName string
@@ -25,7 +27,9 @@ func (f *fakeUpstream) ListTools(context.Context) ([]registry.Tool, error) {
 }
 
 func (f *fakeUpstream) Call(_ context.Context, name string, _ json.RawMessage) (mcp.Response, error) {
+	f.mu.Lock()
 	f.callName = name
+	f.mu.Unlock()
 	if f.err != nil {
 		return mcp.Response{}, f.err
 	}
@@ -33,6 +37,12 @@ func (f *fakeUpstream) Call(_ context.Context, name string, _ json.RawMessage) (
 		return mcp.Response{Error: &mcp.Error{Code: mcp.CodeMethodNotFound, Message: "unknown tool"}}, nil
 	}
 	return mcp.Response{JSONRPC: "2.0", Result: f.result}, nil
+}
+
+func (f *fakeUpstream) calledName() string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.callName
 }
 
 func newTestFacade(up Upstream) *Facade {
@@ -201,8 +211,8 @@ func TestToolsCallAddsResultType(t *testing.T) {
 	if result["resultType"] != "complete" {
 		t.Fatalf("resultType = %v", result["resultType"])
 	}
-	if up.callName != "weather__get_weather" {
-		t.Fatalf("called = %q", up.callName)
+	if up.calledName() != "weather__get_weather" {
+		t.Fatalf("called = %q", up.calledName())
 	}
 }
 

@@ -76,6 +76,12 @@ func (m *mockUpstream) handler() http.Handler {
 	})
 }
 
+func (m *mockUpstream) counts() (initCount, listCount int, notificationHadID bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.initCount, m.listCount, m.notificationHadID
+}
+
 func writeResult(w http.ResponseWriter, id json.RawMessage, result any) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": id, "result": result})
@@ -99,10 +105,11 @@ func TestInitializeAndListTools(t *testing.T) {
 	if len(tools) != 1 || tools[0].Name != "get_weather" {
 		t.Fatalf("tools = %+v", tools)
 	}
-	if m.initCount != 1 {
-		t.Fatalf("initCount = %d", m.initCount)
+	initCount, _, notificationHadID := m.counts()
+	if initCount != 1 {
+		t.Fatalf("initCount = %d", initCount)
 	}
-	if m.notificationHadID {
+	if notificationHadID {
 		t.Fatal("notifications/initialized must not carry an id")
 	}
 }
@@ -138,8 +145,9 @@ func TestReinitializeOn404(t *testing.T) {
 	if len(tools) != 1 {
 		t.Fatalf("tools = %+v", tools)
 	}
-	if m.initCount != 2 {
-		t.Fatalf("initCount = %d, want 2", m.initCount)
+	initCount, _, _ := m.counts()
+	if initCount != 2 {
+		t.Fatalf("initCount = %d, want 2", initCount)
 	}
 }
 

@@ -146,8 +146,11 @@ func (f *Facade) listTools(w http.ResponseWriter, r *http.Request, req mcp.Reque
 		writeError(w, req.ID, http.StatusBadGateway, mcp.CodeInternal, "upstream tools/list failed")
 		return
 	}
+	// Never sort or filter the upstream's slice in place: an upstream may
+	// return a shared cache, and concurrent tools/list calls would race.
+	tools = append([]registry.Tool(nil), tools...)
 	if f.cfg.Policy != nil {
-		filtered := tools[:0]
+		filtered := make([]registry.Tool, 0, len(tools))
 		for _, t := range tools {
 			if f.cfg.Policy.Authorize(tenant, t.Name) == nil {
 				filtered = append(filtered, t)

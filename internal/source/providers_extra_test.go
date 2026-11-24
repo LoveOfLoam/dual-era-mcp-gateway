@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 )
 
@@ -62,14 +63,19 @@ func TestK8sMissingData(t *testing.T) {
 }
 
 func TestNacosProvider(t *testing.T) {
-	var gotDataID, gotGroup, gotTenant string
+	var (
+		mu                             sync.Mutex
+		gotDataID, gotGroup, gotTenant string
+	)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/nacos/v1/cs/configs" {
 			t.Errorf("path = %s", r.URL.Path)
 		}
+		mu.Lock()
 		gotDataID = r.URL.Query().Get("dataId")
 		gotGroup = r.URL.Query().Get("group")
 		gotTenant = r.URL.Query().Get("tenant")
+		mu.Unlock()
 		_, _ = w.Write([]byte(`
 sources:
   - name: weather
@@ -88,8 +94,11 @@ sources:
 	if len(specs) != 1 || specs[0].Name != "weather" {
 		t.Fatalf("specs = %+v", specs)
 	}
-	if gotDataID != "sources.yaml" || gotGroup != "DEFAULT_GROUP" || gotTenant != "tenant-a" {
-		t.Fatalf("query = %s/%s/%s", gotDataID, gotGroup, gotTenant)
+	mu.Lock()
+	dataID, group, tenant := gotDataID, gotGroup, gotTenant
+	mu.Unlock()
+	if dataID != "sources.yaml" || group != "DEFAULT_GROUP" || tenant != "tenant-a" {
+		t.Fatalf("query = %s/%s/%s", dataID, group, tenant)
 	}
 }
 

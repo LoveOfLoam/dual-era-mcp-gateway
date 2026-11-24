@@ -18,6 +18,8 @@
 - Wired xDS apply/rollback into `cmd/controlplane`.
 - Rewrote `task_plan.md` as v2: architecture, component responsibilities, ports, WBS by workstream, gates, test plan, risks, runbook, and explicit `[x]/[~]/[ ]/[!]` status.
 - Added `docs/spec/traceability.md`: PRD FR-CP/DP/POL/TR/STD/REST/OBS/SEC/OPS/TS + NFR + AC-01..30 mapping.
+- Diagnosed GitHub Actions `test` failure: CI runs `-race` (local Windows has no CGO/gcc). Fixed test-only shared writes in facade/legacy/source/REST-adapter tests and the facade's in-place tools slice mutation.
+- CI workflow now uses `go-version-file: go.mod`, runs non-race then race, and supports manual dispatch.
 
 ## Test log
 

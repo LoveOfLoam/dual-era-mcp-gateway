@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"dual-era-mcp-gateway/internal/mcp"
@@ -56,11 +57,16 @@ func TestListTools(t *testing.T) {
 }
 
 func TestGetWithPathAndQuery(t *testing.T) {
-	var gotPath, gotQuery, gotKey string
+	var (
+		mu                        sync.Mutex
+		gotPath, gotQuery, gotKey string
+	)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
 		gotKey = r.Header.Get("X-API-Key")
+		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"id":"42","name":"Ada"}`))
 	}))
@@ -77,22 +83,32 @@ func TestGetWithPathAndQuery(t *testing.T) {
 	if resp.Error != nil {
 		t.Fatalf("error = %+v", resp.Error)
 	}
-	if gotPath != "/v1/customers/42" {
-		t.Fatalf("path = %q", gotPath)
+	mu.Lock()
+	path, query, key := gotPath, gotQuery, gotKey
+	mu.Unlock()
+	if path != "/v1/customers/42" {
+		t.Fatalf("path = %q", path)
 	}
-	if gotQuery != "fields=name" {
-		t.Fatalf("query = %q", gotQuery)
+	if query != "fields=name" {
+		t.Fatalf("query = %q", query)
 	}
-	if gotKey != "secret" {
-		t.Fatalf("key = %q", gotKey)
+	if key != "secret" {
+		t.Fatalf("key = %q", key)
 	}
 }
 
 func TestPostJSONBody(t *testing.T) {
-	var gotBody map[string]any
+	var (
+		mu      sync.Mutex
+		gotBody map[string]any
+	)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, _ := io.ReadAll(r.Body)
-		_ = json.Unmarshal(raw, &gotBody)
+		body := map[string]any{}
+		_ = json.Unmarshal(raw, &body)
+		mu.Lock()
+		gotBody = body
+		mu.Unlock()
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"ok":true}`))
 	}))
@@ -106,8 +122,11 @@ func TestPostJSONBody(t *testing.T) {
 	if resp.Error != nil {
 		t.Fatalf("error = %+v", resp.Error)
 	}
-	if gotBody["sku"] != "x" || gotBody["qty"].(float64) != 2 {
-		t.Fatalf("body = %+v", gotBody)
+	mu.Lock()
+	body := gotBody
+	mu.Unlock()
+	if body["sku"] != "x" || body["qty"].(float64) != 2 {
+		t.Fatalf("body = %+v", body)
 	}
 }
 
