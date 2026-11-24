@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+
+	"dual-era-mcp-gateway/internal/obs"
 )
 
 type mockUpstream struct {
@@ -17,6 +19,7 @@ type mockUpstream struct {
 	session           string
 	failFirstList     bool
 	notificationHadID bool
+	traceID           string
 }
 
 func (m *mockUpstream) handler() http.Handler {
@@ -33,6 +36,7 @@ func (m *mockUpstream) handler() http.Handler {
 		}
 		m.mu.Lock()
 		defer m.mu.Unlock()
+		m.traceID = r.Header.Get("X-Trace-Id")
 
 		switch req.Method {
 		case "initialize":
@@ -160,6 +164,24 @@ func TestCallHTTPError(t *testing.T) {
 	c := NewHTTPClient(srv.URL)
 	if _, err := c.Call(context.Background(), "x", nil); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestTracePropagation(t *testing.T) {
+	m := &mockUpstream{}
+	srv := httptest.NewServer(m.handler())
+	defer srv.Close()
+
+	c := NewHTTPClient(srv.URL)
+	ctx := obs.WithTraceID(context.Background(), "4bf92f3577b34da6a3ce929d0e0e4736")
+	if _, err := c.Call(ctx, "tool", nil); err != nil {
+		t.Fatalf("Call: %v", err)
+	}
+	m.mu.Lock()
+	got := m.traceID
+	m.mu.Unlock()
+	if got != "4bf92f3577b34da6a3ce929d0e0e4736" {
+		t.Fatalf("trace = %q", got)
 	}
 }
 

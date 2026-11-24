@@ -50,7 +50,7 @@ type ToolSource interface {
 ## 4. Native MCP source
 
 - Legacy: HTTP JSON-RPC; `initialize` + `notifications/initialized`; session reuse; `tools/list`/`tools/call`.
-- Modern: direct MCP client (Phase 2).
+- Modern: `internal/modernclient` implements 2026-07-28 `_meta`/headers/list/call/discover; `cmd/gateway -modern` can aggregate it. Envoy routing to modern upstream is still Phase 2.
 - Normalized to internal MCP backend for legacy Envoy `mcp_router`.
 - Errors: connection, timeout, JSON-RPC error, invalid response.
 
@@ -99,4 +99,5 @@ Extend `restAdapter` with:
 - T5: provider reload adds/removes source.
 - T5: collision rejected.
 - T6: single-source prefix stable.
-- `restadapter`: GET path/query, POST JSON body, unknown tool, upstream 5xx.
+- `restadapter`: GET path/query, POST JSON body, unknown tool, upstream 5xx, metadata-host/allowedHosts.
+- `modernclient`: 2026-07-28 headers/`_meta` list/call; HTTP error.

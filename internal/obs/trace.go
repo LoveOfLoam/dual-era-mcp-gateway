@@ -39,7 +39,7 @@ func TraceMiddleware(next http.Handler) http.Handler {
 			id = hex.EncodeToString(b[:])
 		}
 		w.Header().Set("X-Trace-Id", id)
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), traceKey{}, id)))
+		next.ServeHTTP(w, r.WithContext(WithTraceID(r.Context(), id)))
 	})
 }
 
@@ -49,4 +49,9 @@ func TraceIDFromContext(ctx context.Context) string {
 		return v
 	}
 	return ""
+}
+
+// WithTraceID stores a trace id for outbound clients.
+func WithTraceID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, traceKey{}, id)
 }

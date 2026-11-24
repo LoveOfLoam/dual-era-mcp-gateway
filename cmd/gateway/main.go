@@ -19,6 +19,7 @@ import (
 	"dual-era-mcp-gateway/internal/legacy"
 	"dual-era-mcp-gateway/internal/legacyendpoint"
 	"dual-era-mcp-gateway/internal/mcp"
+	"dual-era-mcp-gateway/internal/modernclient"
 	"dual-era-mcp-gateway/internal/obs"
 	"dual-era-mcp-gateway/internal/policy"
 )
@@ -26,10 +27,12 @@ import (
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	legacyURLs := flag.String("legacy", envOr("LEGACY_URLS", "weather=http://127.0.0.1:9001/mcp"), "comma-separated name=url legacy MCP upstreams")
+	modernURLs := flag.String("modern", "", "comma-separated name=url modern 2026-07-28 MCP upstreams")
 	policyPath := flag.String("policy", "", "optional policy JSON file")
 	flag.Parse()
 
 	backends := parseBackends(*legacyURLs)
+	backends = append(backends, parseModernBackends(*modernURLs)...)
 	metrics := obs.NewMetrics()
 	router, err := aggregator.New(backends)
 	if err != nil {
@@ -96,6 +99,23 @@ func parseBackends(spec string) []aggregator.Backend {
 			continue
 		}
 		out = append(out, aggregator.Backend{Name: name, Client: legacy.NewHTTPClient(url)})
+	}
+	return out
+}
+
+func parseModernBackends(spec string) []aggregator.Backend {
+	var out []aggregator.Backend
+	for _, part := range strings.Split(spec, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		name, url, ok := strings.Cut(part, "=")
+		if !ok || name == "" || url == "" {
+			log.Printf("skip invalid modern upstream %q (want name=url)", part)
+			continue
+		}
+		out = append(out, aggregator.Backend{Name: name, Client: modernclient.New(url)})
 	}
 	return out
 }

@@ -38,6 +38,7 @@ powershell -File scripts/test.ps1
 | `internal/envoy` | PASS |
 | `internal/extauthz` | PASS |
 | `internal/ratelimit` | PASS |
+| `internal/modernclient` | PASS |
 | `internal/obs` | PASS |
 | `internal/xds` | PASS (ADS CDS/RDS/LDS + ACK/NACK) |
 | `test/boundary` | PASS |
@@ -59,6 +60,7 @@ powershell -File scripts/test.ps1
 | `internal/legacy` | 82.5% |
 | `internal/xds` | 81.9% |
 | `internal/facade` | 80.8% |
+| `internal/modernclient` | 77.6% |
 | `internal/obs` | 77.4% |
 | `internal/aggregator` | 73.2% |
 | `internal/mcp` | 71.2% |

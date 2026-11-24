@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"dual-era-mcp-gateway/internal/mcp"
+	"dual-era-mcp-gateway/internal/obs"
 	"dual-era-mcp-gateway/internal/registry"
 )
 
@@ -189,6 +190,12 @@ func (c *HTTPClient) postBody(ctx context.Context, body map[string]any, session 
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
+	if tid := obs.TraceIDFromContext(ctx); tid != "" {
+		req.Header.Set("X-Trace-Id", tid)
+		if len(tid) == 32 {
+			req.Header.Set("traceparent", "00-"+tid+"-"+tid[:16]+"-01")
+		}
+	}
 	if session != "" {
 		req.Header.Set("Mcp-Session-Id", session)
 	}

@@ -9,7 +9,7 @@ A **dual-era MCP gateway** with versioned endpoints:
 
 It supports **two tool sources**:
 
-- **native MCP Server** (legacy HTTP; modern direct client is Phase 2);
+- **native MCP Server** (legacy HTTP, plus a 2026-07-28 modern client in `internal/modernclient`);
 - **RESTful API → MCP** (simple JSON REST via Envoy `mcp_json_rest_bridge`, plus a Go `restadapter` for path/query/JSON-body tools).
 
 And **two config layers**:
@@ -68,6 +68,7 @@ Terminal 3:
 ```powershell
 go run ./cmd/gateway -addr :8080 `
   -legacy "weather=http://127.0.0.1:9001/mcp,crm=http://127.0.0.1:9002/mcp" `
+  -modern "modern=http://127.0.0.1:9003/mcp" `
   -policy config/policy.example.json
 ```
 
@@ -156,6 +157,7 @@ internal/
   mcp/              # JSON-RPC, _meta, headers, errors
   facade/           # 2026-07-28 endpoint
   legacy/           # legacy HTTP client + session
+  modernclient/     # 2026-07-28 stateless MCP client
   aggregator/       # multi-source normalization
   registry/         # prefix/sort/collision
   policy/           # API key/tenant/allowlist/rate limit
@@ -177,6 +179,10 @@ deploy/envoy/       # bootstrap for validation
 deploy/t8/          # Docker/Envoy T8 harness
 deploy/helm/dual-era # Helm skeleton
 docs/benchmarks/    # microbenchmark reports
+docs/adr/           # ADR-001..007
+docs/runbook.md     # operations runbook
+docs/demo.md        # 5-minute demo
+scripts/k6/         # load-test script (not executed here)
 ```
 
 ## Scope and non-goals
@@ -185,6 +191,7 @@ Implemented:
 
 - versioned dual-era endpoints;
 - native MCP + REST tool-source abstraction;
+- legacy and 2026-07-28 native MCP clients;
 - static/OpenAPI/K8s-manifest/Nacos providers;
 - generic REST adapter (path/query/JSON body);
 - tool prefix/sort/collision;
@@ -195,14 +202,16 @@ Implemented:
 - draft Envoy topology generation;
 - `/metrics`, trace-id propagation, JSON logger;
 - T8 Docker/Envoy harness and Helm skeleton;
+- 2026-07-28 modern MCP client + `cmd/gateway -modern`;
 - in-process facade microbenchmarks;
+- ADR-001..007, runbook, demo, k6 script;
 - boundary tests T0–T7 + ADS streaming tests.
 
 Not implemented / not verified:
 
 - T8 actual Envoy run in this environment (Docker unavailable);
 - single-endpoint B2;
-- modern MCP upstream;
+- full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;
 - TLS/mTLS, SSE long-connection, zero-downtime LDS;
 - live Kubernetes informer / controller / CRDs;

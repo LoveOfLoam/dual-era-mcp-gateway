@@ -263,7 +263,7 @@ MVP 代码级完成：
 | A-02 | B1 设计文档 | P0 | Gate 1 | 设计评审通过 | `[x]` |
 | A-03 | 协议矩阵 | P0 | B1 | legacy/modern 字段/错误矩阵 | `[x]` |
 | A-04 | 验收测试 T0–T8 | P0 | A-02 | 测试用例可执行 | `[x]` |
-| A-05 | ADR-001..007 | P1 | 关键决策 | 每个决策有上下文/取舍 | `[~]` 只有决策表 |
+| A-05 | ADR-001..007 | P1 | 关键决策 | 每个决策有上下文/取舍 | `[x]` `docs/adr/` |
 | A-06 | SourceSpec schema | P0 | B1 | `api/spec/source-v1alpha1.yaml` | `[x]` |
 | A-07 | 文档一致性检查 | P1 | A-01 | README/spec/plan 不互相矛盾 | `[~]` |
 
@@ -339,7 +339,7 @@ MVP 代码级完成：
 | E-08 | 复杂 REST | P2 | E-07 | OAuth/HMAC/multipart/长任务 | `[ ]` |
 | E-09 | stdio bridge | P2 | C-02 | 进程池/重启 | `[ ]` |
 | E-10 | Registry 前缀/排序/冲突 | P0 | E-06/E-07 | 单源也带前缀 | `[x]` |
-| E-11 | modern MCP upstream | P2 | C-03 | 直连 2026-07-28 | `[ ]` |
+| E-11 | modern MCP upstream | P2 | C-03 | 直连 2026-07-28 | `[x]` `internal/modernclient` + `cmd/gateway -modern`；Envoy 路由未做 |
 | E-12 | Provider/Adapter 接入控制面 | P0 | E-02/E-07 | 从配置构建真实 catalog | `[~]` 库有，命令未接线 |
 | E-13 | SSRF/URL allowlist | P0 | E-07 | metadata IP/内网拒绝 | `[ ]` |
 
@@ -354,7 +354,7 @@ MVP 代码级完成：
 | F-05 | Trace | P0 | C-14 | Tempo/Jaeger | `[~]` trace id 传播；无 OTel |
 | F-06 | Grafana 看板 | P0 | F-01..F-03 | 四块看板 | `[ ]` |
 | F-07 | 告警规则 | P0 | F-01 | NACK/5xx/429/Redis/证书 | `[ ]` |
-| F-08 | Runbook | P0 | C-11 | 启动/变更/故障/回滚 | `[~]` README/计划简版 |
+| F-08 | Runbook | P0 | C-11 | 启动/变更/故障/回滚 | `[x]` `docs/runbook.md` |
 | F-09 | kind + Helm | P0 | C-05 | 5 分钟起 | `[~]` Helm 骨架；无 kind/集群验证 |
 | F-10 | docker-compose | P1 | C-05 | 本地一键 | `[x]` T8 compose；本机 Docker 不可用 |
 | F-11 | CI | P0 | G-01..G-08 | build/vet/test/race/lint/integration | `[~]` test/vet/build/race；无 lint/集成 |
@@ -376,11 +376,11 @@ MVP 代码级完成：
 | G-09 | T8 Envoy runtime | P0 | F-12 | 真实拓扑 | `[!]` |
 | G-10 | AC-01..AC-30 | P0 | T0..T8 | 全部通过或有明确 skip | `[~]` 子集 |
 | G-11 | 覆盖率报告 | P1 | G-01..G-08 | `docs/test-report.md` | `[x]` |
-| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` facade 微基准；无 500 RPS/SSE |
+| G-12 | 压测 | P0 | F-12 | p99/5xx/SSE | `[~]` facade 微基准 + k6 脚本；未实跑 |
 | G-13 | 混沌 | P0 | F-12 | 7.10 行为 | `[~]` 5xx/并发/body 限制；无 kill/Redis/NACK |
 | G-14 | 安全测试 | P0 | D-06 | 401/403/429/413/SSRF | `[~]` API key/allowlist/Origin/SSRF allowlist/body |
-| G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[ ]` |
-| G-16 | ADR-001..007 | P1 | A-05 | 3 篇以上 | `[~]` 决策表，无独立 ADR 文件 |
+| G-15 | 5 分钟 demo | P1 | F-09 | 可录制 | `[x]` `docs/demo.md`；未录视频 |
+| G-16 | ADR-001..007 | P1 | A-05 | 3 篇以上 | `[x]` 7 篇 |
 | G-17 | PRD traceability | P0 | A-01 | FR/AC 映射 | `[x]` |
 | G-18 | commit/push | P0 | G-01..G-08 | 远端同步 | `[~]` P2 变更待提交/推送 |
 
@@ -398,6 +398,9 @@ MVP 代码级完成：
 | T8 harness | public/internal Envoy + policy + mocks | `deploy/t8/`、`scripts/t8.ps1`（本机 SKIP） |
 | Helm | 5 个 Deployment + Service + ConfigMap | `deploy/helm/dual-era`（无 helm/集群验证） |
 | 微基准 | facade list/call | `docs/benchmarks/2026-11-25.md` |
+| modern MCP client | `ListTools`/`Call`/`Discover` + headers/meta | `internal/modernclient` 单测；`cmd/gateway -modern` |
+| trace 传播 | `X-Trace-Id`/traceparent 到 legacy upstream | `internal/legacy` 测试 |
+| ADR/runbook/demo | 7 篇 ADR、runbook、5 分钟 demo、k6 脚本 | `docs/adr`, `docs/runbook.md`, `docs/demo.md`, `scripts/k6` |
 
 仍未完成：T8 真实运行、TLS/SSE/drain、Redis、CRD/controller、internal `mcp_router` LDS、k6/混沌、demo/ADR。
 

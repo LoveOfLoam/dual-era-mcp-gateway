@@ -95,7 +95,7 @@ Status rules:
 
 | ID | 需求 | 实现/证据 | 状态 |
 |---|---|---|---|
-| FR-TR-01 | 拉取 tools/list | `legacy.HTTPClient.ListTools`；modern discover 未做 | PARTIAL |
+| FR-TR-01 | 拉取 tools/list | `legacy.HTTPClient` + `modernclient`（discover/list/call） | DONE（Go 层） |
 | FR-TR-02 | `backend__tool`/冲突 | `registry.Merge` + tests | DONE |
 | FR-TR-03 | 确定性排序 | `Catalog.List` sort + tests | DONE |
 | FR-TR-04 | schema/description/协议/健康 | Tool 有 schema/description/source；无健康状态 | PARTIAL |

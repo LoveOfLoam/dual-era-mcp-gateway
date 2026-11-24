@@ -25,6 +25,8 @@
 - Extended xDS to public CDS/RDS/LDS and ACK/NACK callbacks + tests.
 - Added T8 Docker/Envoy harness (`deploy/t8`, `scripts/t8.ps1`) and Helm skeleton.
 - Added REST adapter SSRF host checks/allowlist; facade microbenchmarks and `docs/benchmarks/2026-11-25.md`.
+- Added `internal/modernclient` (2026-07-28) and `cmd/gateway -modern`; trace propagation to legacy upstream.
+- Added ADR-001..007, runbook, demo, k6 script, Helm/T8 docs.
 
 ## Test log
 
