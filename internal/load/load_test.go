@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 )
@@ -27,12 +28,15 @@ func TestRunOK(t *testing.T) {
 }
 
 func TestRunSendsBodyAndHeaders(t *testing.T) {
+	var mu sync.Mutex
 	var gotBody, gotMethod, gotHeader string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, _ := io.ReadAll(r.Body)
+		mu.Lock()
 		gotBody = string(raw)
 		gotMethod = r.Method
 		gotHeader = r.Header.Get("Mcp-Method")
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
@@ -43,8 +47,11 @@ func TestRunSendsBodyAndHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if gotMethod != http.MethodPost || gotBody != `{"jsonrpc":"2.0"}` || gotHeader != "tools/list" {
-		t.Fatalf("method=%q body=%q header=%q", gotMethod, gotBody, gotHeader)
+	mu.Lock()
+	method, body, header := gotMethod, gotBody, gotHeader
+	mu.Unlock()
+	if method != http.MethodPost || body != `{"jsonrpc":"2.0"}` || header != "tools/list" {
+		t.Fatalf("method=%q body=%q header=%q", method, body, header)
 	}
 }
 
