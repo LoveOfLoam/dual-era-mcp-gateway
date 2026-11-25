@@ -2,7 +2,8 @@
 
 - 版本：2.0
 - 日期：2026-11-25
-- 状态：B1 MVP **库级/本地级**完成；T8 真实 Envoy 拓扑已 PASS（Envoy 1.40.2）
+- 状态：B1 MVP **库级/本地级**完成；T8 真实 Envoy 拓扑已 PASS（Envoy 1.40.2）；K8s/HA/Redis HA 仍有 PARTIAL/BLOCKED
+- **当前权威状态**：[`docs/project-status.md`](docs/project-status.md)
 - 上位文档：[`../envoy-mcp-gateway-plan-a-prd.md`](../envoy-mcp-gateway-plan-a-prd.md)
 - 细化规格：
   - [`docs/superpowers/specs/2026-11-24-dual-era-b1-design.md`](docs/superpowers/specs/2026-11-24-dual-era-b1-design.md)
@@ -690,3 +691,4 @@ powershell -File scripts/envoy-validate.ps1
 | 2026-11-25 | v24 | T8 自动校验 Envoy `/stats/prometheus` 的 downstream 请求指标；HTTP/TLS 都 PASS |
 | 2026-11-25 | v25 | policy 支持 Redis Sentinel；T8 Sentinel 实测因 `+tilt` 未完成 promotion，记录为 PARTIAL/BLOCKED |
 | 2026-11-25 | v26 | Sentinel 等待延长到 40s 仍未 promotion；确认 Docker Desktop tilt 阻塞，不宣称 Redis HA |
+| 2026-11-25 | v27 | 新增 `docs/project-status.md`、ADR-008 depth-first、README/resume/blockers/spec 状态对齐；明确三大亮点边界与生产级差距 |

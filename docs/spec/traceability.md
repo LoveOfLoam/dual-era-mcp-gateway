@@ -1,5 +1,10 @@
 # PRD → Implementation Traceability
 
+> **Status warning (2026-11-25):** this matrix is a historical PRD mapping and
+> is **stale** (e.g. it still marks controller/TLS/Redis as TODO). Use
+> [`../project-status.md`](../project-status.md) as the authoritative current
+> status; refresh this matrix before citing it in a resume or review.
+
 Source PRD: [`../../envoy-mcp-gateway-plan-a-prd.md`](../../envoy-mcp-gateway-plan-a-prd.md)
 
 Status rules:

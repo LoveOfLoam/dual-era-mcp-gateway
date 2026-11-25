@@ -1,5 +1,9 @@
 # Test Report — 2026-11-25
 
+> Current authoritative progress and caveats:
+> [`project-status.md`](project-status.md). CI at `49e4c54` is green for Go
+> only; T8 is a separate Docker/Envoy harness.
+
 ## Environment
 
 | 项 | 值 |

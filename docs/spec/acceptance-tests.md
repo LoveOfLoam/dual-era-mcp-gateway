@@ -1,5 +1,9 @@
 # Acceptance Tests (T0–T8)
 
+> **Status warning (2026-11-25):** the T8 table predates the xDS churn, mTLS,
+> SSE shim, and 10-minute load work. Use
+> [`../project-status.md`](../project-status.md) for current evidence.
+
 Completion means T0–T7 green under `go test ./... -race`; T8 runnable/documented where Envoy/Docker exists.
 
 ## T0 — Spec and codec

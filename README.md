@@ -26,9 +26,11 @@ Policy and operations:
 
 Planning and evidence:
 
+- [Project status](docs/project-status.md) — authoritative current progress, highlights, boundaries, blockers, production gap.
 - [Detailed task plan](task_plan.md) — WBS, gates, risks, runbook, current status.
-- [PRD → implementation traceability](docs/spec/traceability.md) — FR/AC mapping with DONE/PARTIAL/TODO.
+- [PRD → implementation traceability](docs/spec/traceability.md) — historical FR/AC mapping; status is stale, use project-status.md first.
 - [Test report](docs/test-report.md) — commands, coverage, skipped environment items.
+- [Blockers](docs/blockers.md) — environment-specific items that are not PASS.
 
 ## Architecture (B1)
 
@@ -141,17 +143,18 @@ powershell -File scripts/t8.ps1            # Docker/Envoy T8 smoke test
 Current status (2026-11-25):
 
 - T0–T7 boundary tests: **green**.
-- xDS ADS/CDS/RDS/LDS and ACK/NACK callback tests: **green**.
-- `go vet` / `go build`: green; CI race run: **green** on the previous batch.
+- Go race: **green** (`go test -race -count=1 ./...`, Linux Go container).
+- CI (Go only): **green** at `49e4c54`; T8 is not in CI.
 - `scripts/test.ps1`: green; Helm/Envoy checks **SKIP** without binaries.
-- `scripts/t8.ps1`: **PASS** with `envoyproxy/envoy:v1.40.2` on Docker Desktop.
-  `scripts/t8-mtls.ps1`: **PASS** (client certificate required);
-  `scripts/t8-xds.ps1`: **PASS** (100 LDS/CDS/RDS churns, 0 errors, long-lived SSE, NACK + recovery).
-  See [`docs/t8-report.md`](docs/t8-report.md). HTTP and `-TLS` overlays both PASS;
-  TLS includes an actual HTTP/2 `initialize` (Go `http2.Transport`), the REST
-  bridge is aggregated as `rest__*`, and ratelimit uses Redis
-  (60×200 / 10×429, `DBSIZE=1`). Legacy SSE is served by `cmd/sse-shim` and
-  T8-tested; raw `mcp_router` GET is still 405.
+- T8 (`envoyproxy/envoy:v1.40.2`, Docker Desktop): **PASS** for path split,
+  ext_authz, Redis ratelimit (60×200 / 10×429), REST bridge, SSE shim,
+  TLS1.3 + actual HTTP/2, mTLS, 100 LDS/CDS/RDS churns + ACK/NACK + recovery,
+  long-lived SSE across churn, and Envoy Prometheus stats.
+- 10-minute T8 load: 500,710 requests, ~835 RPS, p99 3.74ms, 0 errors
+  (single host; not a production SLA).
+- HA / Redis Sentinel / real K8s are **PARTIAL or BLOCKED**; see
+  [`docs/project-status.md`](docs/project-status.md) and
+  [`docs/blockers.md`](docs/blockers.md).
 
 See [`docs/test-report.md`](docs/test-report.md) and [`docs/spec/acceptance-tests.md`](docs/spec/acceptance-tests.md).
 
@@ -201,15 +204,15 @@ deploy/envoy/       # bootstrap for validation
 deploy/t8/          # Docker/Envoy T8 harness
 deploy/helm/dual-era # Helm skeleton
 deploy/observability # starter Grafana dashboard + Prometheus rules
-deploy/crds/        # McpSource/McpConsumer schemas (no controller)
+deploy/crds/        # McpSource/McpConsumer schemas + list/watch controller
 deploy/admission/   # webhook Deployment/Service/configuration skeleton
 deploy/controller/  # ConfigMap directory controller Deployment
 docs/benchmarks/    # microbenchmark reports
-docs/adr/           # ADR-001..007
+docs/adr/           # ADR-001..008
 docs/runbook.md     # operations runbook
 docs/demo.md        # 5-minute demo
 docs/resume.md      # resume bullets + interview Q&A
-docs/chaos.md       # failure-injection matrix (not executed here)
+docs/chaos.md       # failure-injection matrix; results in chaos-report.md
 scripts/k6/         # load-test script (not executed here)
 scripts/scan.ps1    # govulncheck/trivy when installed
 scripts/load-local.ps1 # local Go-mode load run
@@ -230,7 +233,8 @@ Implemented:
 - legacy and 2026-07-28 native MCP clients;
 - stdio MCP bridge (`cmd/stdio-bridge`);
 - admission webhook handler + manifests (not cluster-validated);
-- ConfigMap directory controller (not a CRD informer);
+- ConfigMap directory controller;
+- CRD list/watch controller + Lease leader election (`cmd/crd-controller`, fake API tested only);
 - static/OpenAPI/K8s-manifest/Nacos providers;
 - generic REST adapter (path/query/JSON body, OAuth2 client credentials, HMAC signatures);
 - tool prefix/sort/collision;
@@ -245,7 +249,7 @@ Implemented:
 - 2026-07-28 modern MCP client + `cmd/gateway -modern`;
 - in-process facade microbenchmarks;
 - JSONL audit events, dry-run config diff;
-- ADR-001..007, runbook, demo, k6 script, starter Grafana/Prometheus assets;
+- ADR-001..008, runbook, demo, k6 script, starter Grafana/Prometheus assets;
 - boundary tests T0–T7 + ADS streaming tests.
 
 Not implemented / not verified:
@@ -254,12 +258,12 @@ Not implemented / not verified:
 - single-endpoint B2;
 - full modern-upstream Envoy routing (the Go client exists, but Envoy/Helm does not route to it yet);
 - internal `mcp_router` LDS resources;
-- zero-downtime LDS/CDS and HA/leader election (T8 TLS + mTLS pass);
-- real-cluster validation of the CRD list/watch controller (fake API tests only);
-- Redis production HA/rotation validation (T8 uses a single Redis container); JWT;
+- zero-loss gateway HA (T8 stop-one: 17,707 req / 3×503);
+- real-cluster validation of the CRD list/watch controller + leader election (fake API only);
+- Redis production HA/rotation (Sentinel promotion blocked by Docker Desktop `+tilt`);
 - complex REST adapter multipart/long-running (OAuth2/HMAC are implemented);
-- real 500 RPS / k6 / chaos reports;
-- OAuth/OIDC, canary, multi-region.
+- multi-hour SSE soak / production HA load / k6;
+- full MCP 2026 conformance, OIDC/SSO, canary, multi-region.
 
 ## GitHub
 

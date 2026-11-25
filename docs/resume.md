@@ -1,32 +1,41 @@
 # Resume bullets and interview notes
 
+## 定位
+
+> B1 dual-era MCP gateway vertical slice：Envoy 数据面 + Go 控制面，xDS 下发，
+> legacy/modern 双端点，native MCP + REST 统一 catalog。
+>
+> 不是生产级网关；三个设计亮点有 T8 运行证据，生产化缺口单独列出。
+
 ## 简历 bullet（可直接改写）
 
-- 设计并实现 **dual-era MCP 网关**：按版本拆成 legacy `/mcp`（Envoy `mcp_router`）与 modern
-  `/modern/mcp`（Go 2026-07-28 facade），避免把旧入口包装成“现代协议支持”。
-- 用 **Envoy + Go 控制面** 分离数据面/控制面：public CDS/RDS/LDS + ACK/NACK、
-  配置 SHA-256 版本、history/rollback、dry-run diff。
-- 抽象 **Provider / ToolSource** 两层：static、OpenAPI、K8s manifest、Nacos Config，
-  native MCP、REST、stdio 统一成 `ListTools`/`Call`，工具名 `source__tool` 前缀、
-  排序、冲突校验。
-- 实现 **策略运行时**：ext_authz gRPC（API key/HS256/RS256 JWKS JWT、tenant、tool allowlist）、
-  ratelimit gRPC（内存 + Redis Lua fixed window、429 JSON-RPC body/Retry-After）、
-  JSONL 审计；Redis 故障走 fail-open + 内存回退。
-- 实现 **REST → MCP adapter**：path/query/JSON body、OAuth2 client credentials、
-  HMAC 签名、metadata host SSRF 拒绝、allowedHosts。
-- 建立 **TDD/spec-driven** 证据链：T0–T8 边界、race CI、覆盖率、WBS/Gate/FR/AC
-  traceability；T8 用真实 Docker/Envoy harness：path split、ext_authz、Redis ratelimit、
-  REST bridge、legacy SSE shim、TLS/HTTP2、mTLS、100 次 xDS CDS/RDS churn + ACK、
-  load 与 chaos 都有运行证据；环境不可用时明确 SKIP 而非伪造 PASS。
-- 可观测：`/metrics`、结构化日志、`X-Trace-Id`/`traceparent` 传播、Grafana/Prometheus
-  starter 资产。
+- 设计并实现 **dual-era MCP 网关**：legacy `/mcp` 走 Envoy `mcp_router`，
+  modern `/modern/mcp` 由 Go 2026-07-28 facade 处理；用双端点承接新旧客户端，
+  不把旧入口包装成“现代协议支持”。
+- 实现 **Envoy 数据面 + Go 控制面**：ADS 下发 public LDS/CDS/RDS，
+  配置 SHA-256 版本、history/rollback/dry-run/audit；T8 实测 100 次
+  LDS/CDS/RDS 变更、ACK/NACK、长连接 SSE 跨 churn。
+- 抽象 **Provider / ToolSource**：native MCP、REST、stdio 统一为
+  `ListTools`/`Call`；`source__tool` 前缀、排序、冲突校验；native MCP 与
+  REST 共享一个 catalog。
+- 实现 **REST → MCP**：path/query/JSON body、OAuth2 client credentials、
+  HMAC、metadata host SSRF 拒绝、allowedHosts；Envoy
+  `mcp_json_rest_bridge` 作为内部 REST backend 接入 `rest__*`。
+- 实现 **策略运行时**：ext_authz（API key/tenant/allowlist、HS256/RS256 JWKS）、
+  ratelimit（内存 + Redis Lua fixed window）；T8 实测 60×200 / 10×429，
+  Redis 故障 fail-open 回退。
+- 建立 **TDD/spec-driven 证据链**：T0–T7 边界测试、Go race CI、T8
+  Docker/Envoy harness；TLS1.3/HTTP2、mTLS、SSE、Redis ratelimit、xDS
+  churn、chaos、10 分钟压测都有运行证据；环境不足处明确标注 PARTIAL/BLOCKED。
+- 可观测：`/metrics`、Envoy `/stats/prometheus`（T8 断言）、结构化日志、
+  `X-Trace-Id`/`traceparent` 传播、Grafana/Prometheus starter 资产。
 
 ## 面试问答（简短版）
 
 **Q1：为什么不做单端点，而做 `/mcp` + `/modern/mcp`？**
 Envoy `mcp_router` 是 terminal filter，不能在同一 listener 上处理 2026-07-28 的
-`server/discover`/`_meta`/无 session 语义；单端点要么把现代请求塞进 legacy，要么让
-modern 依赖 WIP filter。B1 是诚实且可测试的折中；B2 单端点是后续设计。
+`server/discover`/`_meta`/无 session 语义；单端点要么把现代请求塞进 legacy，
+要么让 modern 依赖 WIP filter。B1 是诚实且可测试的折中；B2 单端点是后续设计。
 
 **Q2：控制面和数据面怎么分？**
 Envoy 负责 TLS/L7/auth/路由/legacy 聚合；Go 负责 modern 协议、Provider 编译、
@@ -37,8 +46,9 @@ Envoy 负责 TLS/L7/auth/路由/legacy 聚合；Go 负责 modern 协议、Provid
 CDS，避免每次加 MCP server 都改 listener。
 
 **Q4：xDS 做到什么程度？**
-public listener 的 CDS/RDS/LDS + ACK/NACK；internal `mcp_router` 仍静态。没有冒充
-完整 LDS/EDS/canary。
+public listener 的 LDS/CDS/RDS + ACK/NACK；T8 实测 100 次变更、live load
+0 error、ACK 175、NACK 3143 + recovery、长连接 SSE 跨 churn。
+internal `mcp_router` 仍静态；没有 EDS、多节点 xDS、控制面 leader election。
 
 **Q5：Redis 限流为什么 fail-open？**
 限流服务不可用时，鉴权仍 fail-closed；限流选择 fail-open + 内存回退，避免 Redis
@@ -50,8 +60,9 @@ metadata host 拒绝；`allowedHosts` 白名单；不允许用户随意指定 UR
 
 **Q7：T8 跑了吗？**
 跑了。Docker Desktop + Envoy 1.40.2 上 `scripts/t8.ps1` / `-TLS` / `t8-mtls.ps1` /
-`t8-xds.ps1` / `t8-load.ps1` / `t8-chaos.ps1` 都 PASS；raw `mcp_router` GET/SSE
-仍是 405，公开 SSE 由 `cmd/sse-shim` 承担。T8 是运行证据，不是 SLA。
+`t8-xds.ps1` / `t8-load.ps1` / `t8-chaos.ps1` 都有结果；10 分钟单机 835 RPS、
+p99 3.74ms、0 error。raw `mcp_router` GET/SSE 仍是 405，公开 SSE 由
+`cmd/sse-shim` 承担。T8 是运行证据，不是 SLA。
 
 **Q8：stdio bridge 怎么做的？**
 子进程 stdin/stdout newline-delimited JSON-RPC；ID→pending channel 路由；HTTP
@@ -63,14 +74,24 @@ metadata host 拒绝；`allowedHosts` 白名单；不允许用户随意指定 UR
 “有 JWT 代码”说成“生产级 OIDC”。
 
 **Q10：这个项目最大的限制？**
-K8s CRD informer/controller、
-HA/leader election、canary、Redis HA 未做。10 分钟单机 T8 已跑（~835 RPS、p99 3.74ms、
-0 error），但仍是单 Docker 主机、单副本、`tools/list` 流量，不是生产 SLA。
-T8 的 ext_authz/Redis ratelimit/SSE/mTLS/xDS LDS-CDS-RDS churn + 长连接 SSE + NACK 是真运行证据。
+真实 K8s 集群验证、零丢失 HA、Redis Sentinel failover、控制面持久化/鉴权都未完成。
+T8 停 1 个 gateway 仍有 3×503；Redis Sentinel 在 Docker Desktop 进入 `+tilt`；
+CRD controller/leader election 只有 fake API 测试。10 分钟压测是单机 Docker，
+不是生产 SLA。
+
+## 三个亮点的边界
+
+| 亮点 | 能讲什么 | 不能讲什么 |
+|---|---|---|
+| xDS 控制面 | public LDS/CDS/RDS、ACK/NACK、100 次 churn、长 SSE | “完整多节点 xDS / internal mcp_router LDS / EDS” |
+| 双端点 | legacy + modern 同栈、TLS/HTTP2、SSE shim | “单端点 B2 / 完整 2026 conformance” |
+| REST + native | `rest__*` 实际调用、统一 catalog、SSRF 防护 | “复杂 multipart/async REST / 生产级 REST bridge” |
 
 ## 不要写进简历的表述
 
-- “支撑 500 RPS / p99 < 10ms”——没有真实压测数据。
-- “生产级 K8s controller/CRD”——只有 Helm 骨架和文件 Provider。
-- “完整 MCP 2026-07-28 全特性”——只覆盖 discover/list/call/_meta/headers 的核心路径。
-- “T8 等于生产可用”——T8 是单机 Docker harness，不是 HA/SLA；raw `mcp_router` SSE 仍 405。
+- “支撑 500 RPS / p99 < 10ms 的生产 SLA”——只有单机 Docker 10 分钟 835 RPS 的证据。
+- “生产级 K8s controller/CRD”——只有 fake API 测试，没有真实集群。
+- “完整 MCP 2026-07-28 全特性”——只覆盖 discover/list/call/_meta/headers 核心路径。
+- “零停机 HA”——当前停 1 个 gateway 有 3×503。
+- “Redis HA / Sentinel failover”——当前被 Docker Desktop tilt 阻塞。
+- “T8 等于生产可用”——T8 是单机 Docker harness，不是 HA/SLA。

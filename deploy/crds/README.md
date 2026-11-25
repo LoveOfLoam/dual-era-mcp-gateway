@@ -1,19 +1,26 @@
-# CRD schemas (controller not implemented)
+# CRD schemas and list/watch controller
 
-These manifests define **schemas only**:
+These manifests define:
 
 - `McpSource` — native MCP / REST source, mirroring `internal/source.SourceSpec`;
 - `McpConsumer` — tenant, API-key digests, tool allowlist.
 
-What is **not** implemented:
+A controller exists:
 
-- a controller that watches these CRs and applies a `controlplane.Config`;
-- a CRD controller/informer (there is a ConfigMap-directory controller in
-  `internal/controller`, but it polls a volume, not the Kubernetes API);
-- status/conditions, finalizers, leader election, mTLS.
+- `cmd/crd-controller` + `internal/kube` list/watch both CRDs and POST a
+  compiled `controlplane.Config` to `/api/v1/apply`;
+- `deploy/controller/crd-deployment.yaml` runs 2 replicas with Lease leader
+  election;
+- fake-Kubernetes API tests cover list/compile/hash dedupe and lease
+  acquire/renew/expiry.
 
-`kubectl apply -f deploy/crds/` creates the CRDs, but nothing reconciles them.
-Do not describe this as Kubernetes operator support.
+Not verified:
 
-The current working K8s-adjacent path is the manifest/ConfigMap provider
-(`internal/source/k8s.go`) and the Helm skeleton in `deploy/helm/dual-era`.
+- real-cluster install/rollout;
+- status/conditions and finalizers;
+- admission webhook against a real API server;
+- mTLS/HA for the controller.
+
+Do not describe this as production Kubernetes operator support. The
+ConfigMap-directory controller (`internal/controller`) remains available as a
+non-CRD mode.
