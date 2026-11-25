@@ -18,10 +18,18 @@ jobs:
           cache: true
       - name: Show Go version
         run: go version
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "gofmt needed:"
+            echo "$unformatted"
+            exit 1
+          fi
       - name: go test (non-race)
-        run: go test ./...
+        run: go test -count=1 ./...
       - name: go test (race)
-        run: go test -race ./...
+        run: go test -race -count=1 ./...
       - name: go vet
         run: go vet ./...
       - name: go build
